@@ -20,7 +20,7 @@ export default async function Help() {
     <>
       <header className="topbar">
         <div className="wrap">
-          <Link href="/" className="brand">CEDA Innovation Portal</Link>
+          <Link href="/" className="brand"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /><span>Innovation Portal</span></Link>
           <nav className="nav"><Link href="/app">My dashboard</Link></nav>
         </div>
       </header>

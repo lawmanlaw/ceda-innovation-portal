@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <>
       <header className="topbar">
         <div className="wrap">
-          <Link href="/app" className="brand">CEDA Innovation Portal</Link>
+          <Link href="/app" className="brand"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /><span>Innovation Portal</span></Link>
           <NavLinks links={[...NAV[me.role], ['/help', 'Help']]} />
           <Notifications userId={me.id} />
           <details style={{ position: 'relative' }}>

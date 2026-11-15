@@ -8,7 +8,7 @@ export default async function Home() {
     <>
       <header className="topbar">
         <div className="wrap">
-          <Link href="/" className="brand">CEDA Innovation Portal</Link>
+          <Link href="/" className="brand"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /><span>Innovation Portal</span></Link>
           <nav className="nav" aria-label="Main">
             <Link href="/help">Help</Link>
             {me ? <Link href="/app">My dashboard</Link> : <Link href="/login">Sign in</Link>}
@@ -64,9 +64,6 @@ export default async function Home() {
           </section>
         </div>
       </main>
-      <footer className="wrap muted" style={{ paddingBottom: '2rem' }}>
-        <Link href="/help#privacy">Privacy</Link> · <Link href="/help#support">Support</Link>
-      </footer>
     </>
   );
 }

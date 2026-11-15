@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main id="main">
       <div className="wrap" style={{ maxWidth: 440 }}>
-        <p><Link href="/" className="brand">CEDA Innovation Portal</Link></p>
+        <p><Link href="/" className="brand"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /><span>Innovation Portal</span></Link></p>
         <div className="card">
           <AuthForm initialMode={mode === 'signup' ? 'signup' : 'signin'} districts={(districts ?? []).map((d) => d.name)} />
         </div>
