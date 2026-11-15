@@ -12,7 +12,7 @@ create table storage.objects (id uuid default gen_random_uuid(), bucket_id text,
 create function storage.foldername(n text) returns text[] language sql as $$ select string_to_array(n,'/') $$;
 grant usage on schema public, auth, storage to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -59,7 +59,8 @@ check('other cannot read notifications', await as('other', `select * from public
 check('audit submitter blocked', await as('sub', `select * from public.audit_log`), r=>r.length===0);
 await db.exec(`select set_config('request.uid','',false); update public.profiles set role='admin' where id='${U.other}'`);
 check('audit admin reads', await as('other', `select count(*)::int n from public.audit_log`), r=>r[0].n>5);
-check('audit immutable', await as('other', `delete from public.audit_log`), r=>typeof r==='string');
+await as('other', `delete from public.audit_log`); await as('other', `update public.audit_log set action='x'`);
+check('audit immutable', (await db.query(`select count(*)::int n, count(*) filter (where action='x')::int x from public.audit_log`)).rows[0], r=>r.n>5 && r.x===0);
 check('report', await as('adj', `select public.report_overview() r`), r=>r[0].r.totals.ideas===1);
 check('report blocked for submitter', await as('sub', `select public.report_overview()`), r=>typeof r==='string');
 const t = await as('sub', `select * from public.open_chat('Help','Hello there',null)`);
@@ -71,3 +72,10 @@ check('agent replies', await as('agent', `insert into public.chat_messages(threa
 check('first reply tracked', (await db.query(`select first_reply_at from public.chat_threads`)).rows[0].first_reply_at, r=>!!r);
 check('chat hours fn', (await db.query(`select public.chat_is_open('2026-11-16 10:00+02') a, public.chat_is_open('2026-11-16 17:00+02') b, public.chat_is_open('2026-12-25 10:00+02') c`)).rows[0], r=>r.a && !r.b && !r.c);
 check('anon cannot submit', await (async()=>{await db.exec(`select set_config('request.uid','',false); set role anon;`); try{await db.query(`select public.submit_idea('aaaaa','bbbbbbbbbbbbbbbbbbbbbbbb',1::smallint,'Gaborone','{}')`);return 'ran'}catch(e){return 'ERR'}finally{await db.exec('reset role')}})(), r=>r==='ERR');
+
+const own = (await as('ev', `select * from public.submit_idea('Evaluator idea','An idea submitted by an evaluator account',1::smallint,'Gaborone',$1)`, [answers]))[0];
+check('no self evaluation', await as('adj', `select public.assign_evaluator($1,$2)`,[own.id,U.ev]), r=>typeof r==='string' && r.includes('own idea'));
+const adjIdea = (await as('adj', `select * from public.submit_idea('Adjudicator idea','An idea submitted by an adjudicator account',1::smallint,'Gaborone',$1)`, [answers]))[0];
+check('no self decision', await as('adj', `select public.move_idea($1,'rejected','no')`,[adjIdea.id]), r=>typeof r==='string' && r.includes('own idea'));
+let last; for (let i=0;i<6;i++) last = await as('sub', `select id from public.submit_idea('Bulk idea ${i}','Testing the hourly submission limit here',1::smallint,'Gaborone',$1)`, [answers]);
+check('submission rate limit', last, r=>typeof r==='string' && r.includes('5 ideas'));
