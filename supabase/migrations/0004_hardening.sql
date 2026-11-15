@@ -68,3 +68,4 @@ for each row execute function public.no_self_decision();
 -- Audit log: remove write privileges outright, on top of the trigger and row level security
 revoke insert, update, delete, truncate on public.audit_log from anon, authenticated;
 revoke all on public.agent_presence from anon;
+revoke execute on function public.rate_limit(), public.no_self_evaluation(), public.no_self_decision() from public, anon, authenticated;
