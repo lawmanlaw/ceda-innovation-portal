@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main" className="skip">Skip to content</a>
         {children}
         <footer className="wrap muted" style={{ padding: '1.5rem 0 2rem', fontSize: '.85rem' }}>
-          Prototype built by Neoterra for the CEDA Innovation Portal Hackathon, 2026 · <Link href="/help#privacy">Privacy</Link> · <Link href="/help#support">Support</Link>
+          <Link href="/help#privacy">Privacy</Link> · <Link href="/help#support">Support</Link>
         </footer>
       </body>
     </html>
