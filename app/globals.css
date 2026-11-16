@@ -228,7 +228,7 @@ th { font-size: .85rem; letter-spacing: .01em; }
 /* Logo settles in once when the site opens */
 /* Brand entrance: the logo settles in, the divider draws down, then the title slides in beside it */
 .brand { position: relative; }
-.brand img { transform-origin: left center; animation: brand-logo 600ms var(--ease-out) both; transition: transform var(--motion-200) var(--ease-out); }
+.brand img { transform-origin: left center; animation: brand-logo var(--motion-300) var(--ease-out) both; transition: transform var(--motion-200) var(--ease-out); }
 .brand span { box-shadow: none; position: relative; animation: brand-title var(--motion-300) var(--ease-out) 350ms both; }
 .brand span::before { content: ''; position: absolute; left: 0; top: 10%; bottom: 10%; width: 1px; background: var(--line); transform-origin: top; animation: brand-rule var(--motion-300) var(--ease-out) 250ms both; }
 .brand:hover img { transform: translateY(-1px) scale(1.03); }
