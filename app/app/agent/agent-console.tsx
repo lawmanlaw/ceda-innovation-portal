@@ -23,9 +23,9 @@ export default function AgentConsole({ me }: { me: string }) {
 
   useEffect(() => {
     load();
-    sb.rpc('agent_heartbeat');
-    const beat = setInterval(() => sb.rpc('agent_heartbeat'), 60_000);
-    const ch = sb.channel('agent-threads').on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads' }, load).subscribe();
+    sb.rpc('agent_heartbeat').then(() => {});
+    const beat = setInterval(() => sb.rpc('agent_heartbeat').then(() => {}), 60_000);
+    const ch = sb.channel(`agent-threads:${crypto.randomUUID()}`).on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads' }, load).subscribe();
     return () => {
       clearInterval(beat);
       sb.removeChannel(ch);

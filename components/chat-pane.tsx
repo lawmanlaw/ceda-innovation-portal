@@ -18,7 +18,7 @@ export default function ChatPane({ threadId, me, closed, onClose }: { threadId: 
     sb.from('chat_messages').select('id, sender_id, body, system, created_at').eq('thread_id', threadId).order('id')
       .then(({ data }: { data: unknown }) => alive && setMsgs((data as Msg[]) ?? []));
     const ch = sb
-      .channel('chat:' + threadId)
+      .channel(`chat:${threadId}:${crypto.randomUUID()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `thread_id=eq.${threadId}` }, (p: { new: unknown }) => {
         setMsgs((prev) => (prev.some((m) => m.id === (p.new as Msg).id) ? prev : [...prev, p.new as Msg]));
       })

@@ -78,7 +78,7 @@ export default function ChatWidget({ userId, hide }: { userId: string | null; hi
   // Follow the conversation: accepted, first reply, ended
   useEffect(() => {
     if (!thread?.id) return;
-    const ch = sb.channel('widget:' + thread.id)
+    const ch = sb.channel(`widget:${thread.id}:${crypto.randomUUID()}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_threads', filter: `id=eq.${thread.id}` },
         (p: { new: unknown }) => setThread(p.new as Thread))
       .subscribe();
