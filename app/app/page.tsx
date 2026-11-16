@@ -1,9 +1,19 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireMe, supabaseServer } from '@/lib/supabase/server';
-import { StageLabel, StageTrack } from '@/components/stage';
+import { StageLabel } from '@/components/stage';
+import Icon, { type IconName } from '@/components/icon';
+import { Activity, Stat, Steps, Tile, tone, type Step } from '@/components/dash';
+import { STAGE_LABEL, type Stage } from '@/lib/types';
 import type { Idea } from '@/lib/types';
 import { fmtDate } from '@/lib/util';
+
+const hello = (name: string | null | undefined) => {
+  const h = Number(new Date().toLocaleString('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Africa/Gaborone' }));
+  return `${h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'}${name ? `, ${name.split(' ')[0]}` : ''}`;
+};
+const STAGE_PCT: Record<string, number> = { submitted: 20, in_review: 45, feedback: 45, approved: 80, awarded: 100, rejected: 100, withdrawn: 100 };
+const STAGE_ICON: Record<string, IconName> = { submitted: 'send', in_review: 'review', feedback: 'chat', approved: 'check', awarded: 'award', rejected: 'list', withdrawn: 'list' };
 
 export const metadata = { title: 'Dashboard' };
 
@@ -15,66 +25,55 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const sb = await supabaseServer();
 
   if (me.role === 'submitter') {
-    const { data } = await sb.from('ideas').select('*').eq('owner_id', me.id).order('updated_at', { ascending: false });
+    const since = new Date(Date.now() - 7 * 86400000).toISOString();
+    const [{ data }, { data: saved }, { data: alerts }] = await Promise.all([
+      sb.from('ideas').select('*').eq('owner_id', me.id).order('updated_at', { ascending: false }),
+      sb.from('interests').select('challenge_id, challenges(title, district)').eq('user_id', me.id).eq('saved', true).limit(3),
+      sb.from('notifications').select('created_at').eq('user_id', me.id).gte('created_at', since),
+    ]);
     const all = (data ?? []) as Idea[];
     const drafts = all.filter((i) => i.stage === 'draft');
     const ideas = all.filter((i) => i.stage !== 'draft');
+    const basket = (saved ?? []) as unknown as { challenge_id: string; challenges: { title: string; district: string | null } | null }[];
+    const steps: Step[] = [
+      ...ideas.filter((i) => i.stage === 'feedback').map((i) => ({ href: `/app/ideas/${i.id}`, icon: 'chat' as const, title: `Reply to the panel: ${i.title}`, sub: 'They asked for changes', t: 'orange' as const })),
+      ...drafts.map((d) => ({ href: `/app/ideas/new?draft=${d.id}`, icon: 'send' as const, title: `Finish your draft: ${d.title || 'Untitled idea'}`, sub: `Last saved ${fmtDate(d.updated_at, true)}`, t: 'maroon' as const })),
+      ...basket.map((b) => ({ href: '/app/challenges', icon: 'bulb' as const, title: b.challenges?.title ?? 'Saved challenge', sub: `In your basket${b.challenges?.district ? ` · ${b.challenges.district}` : ''}`, t: 'gold' as const })),
+      ...(ideas.length || drafts.length ? [] : [{ href: '/app/ideas/new', icon: 'plus' as const, title: 'Start your first idea', sub: 'About 10 minutes, saves as you type', t: 'maroon' as const }]),
+      { href: '/app/challenges', icon: 'bulb', title: 'Discover community challenges', sub: 'Swipe through problems near you', t: 'brown' },
+    ];
+    const count = (st: string[]) => ideas.filter((i) => st.includes(i.stage)).length;
     return (
-      <div className="stack">
-        <div className="row between">
-          <h1>Welcome{me.full_name ? `, ${me.full_name.split(' ')[0]}` : ''}</h1>
-          <Link className="btn" href="/app/ideas/new">Submit an idea</Link>
-        </div>
-        {drafts.length > 0 && (
-          <section className="card">
-            <h2>Drafts <span className="muted">({drafts.length})</span></h2>
-            <p className="muted">Only you can see these. Submit them when you are ready.</p>
-            {drafts.map((d) => (
-              <div key={d.id} className="row between" style={{ padding: '.5rem 0' }}>
-                <span>{d.title || 'Untitled idea'}<br /><small>Last saved {fmtDate(d.updated_at, true)}</small></span>
-                <Link className="btn secondary small" href={`/app/ideas/new?draft=${d.id}`}>Continue</Link>
-              </div>
+      <div className="dash">
+        <div className="dash-main">
+          <p className="dash-hello">{hello(me.full_name)}, welcome back</p>
+          <div className="row between"><h1>My ideas</h1><Link className="btn small" href="/app/ideas/new">Submit an idea</Link></div>
+          <div className="dtiles">
+            {ideas.slice(0, 4).map((i, k) => (
+              <Tile key={i.id} href={`/app/ideas/${i.id}`} title={i.title} sub={`${i.ref} · ${STAGE_LABEL[i.stage as Stage]}`} pct={STAGE_PCT[i.stage] ?? 0} icon={STAGE_ICON[i.stage] ?? 'bulb'} t={tone(k)} />
             ))}
-          </section>
-        )}
-        {ideas.length > 0 && (() => {
-          const forward = ideas.filter((i) => ['approved', 'awarded'].includes(i.stage)).length;
-          const waiting = ideas.filter((i) => i.stage === 'feedback');
-          const pct = Math.round((forward / ideas.length) * 100);
-          return (
-            <section className="summary">
-              <div>
-                <strong>{waiting.length ? `${waiting.length} idea${waiting.length > 1 ? 's need' : ' needs'} your reply` : 'Nothing needs your action right now'}</strong>
-                <span>{forward} of {ideas.length} ideas taken forward</span>
-                {waiting[0] && <Link className="btn light small" href={`/app/ideas/${waiting[0].id}`}>Open it</Link>}
-              </div>
-              <svg className="ring" viewBox="0 0 64 64" role="img" aria-label={`${pct}% taken forward`}>
-                <circle cx="32" cy="32" r="26" />
-                <circle cx="32" cy="32" r="26" pathLength={100} style={{ strokeDasharray: `${pct} 100` }} />
-                <text x="32" y="37" textAnchor="middle">{pct}%</text>
-              </svg>
-            </section>
-          );
-        })()}
-        {ideas.length === 0 && drafts.length === 0 && (
-          <div className="card">
-            <img className="photo" src="/img/plane.webp" alt="" loading="lazy" style={{ aspectRatio: '21 / 9', marginBottom: '1rem' }} />
-            <h2>No ideas yet</h2>
-            <p className="muted">Submitting takes about 10 minutes. You can save your thinking in a document first and paste it in.</p>
-            <Link className="btn" href="/app/ideas/new">Start your first idea</Link>
+            {ideas.length < 2 && <Link href="/app/ideas/new" className="dtile add"><Icon name="plus" still /><strong>New idea</strong><span>Saves as a draft while you type</span></Link>}
           </div>
-        )}
-        {ideas.map((i) => (
-          <Link key={i.id} href={`/app/ideas/${i.id}`} className="card" style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
-            <div className="row between">
-              <h2 style={{ margin: 0 }}>{i.title}</h2>
-              <StageLabel stage={i.stage} />
-            </div>
-            <p className="muted" style={{ margin: '.25rem 0 .5rem' }}>{i.ref} · submitted {fmtDate(i.submitted_at)}{i.version > 1 ? ` · version ${i.version}` : ''}</p>
-            <StageTrack stage={i.stage} />
-            {i.stage === 'feedback' && <p className="notice" style={{ marginTop: '1rem' }}>The panel has asked for changes. Open the idea to read their feedback and resubmit.</p>}
-          </Link>
-        ))}
+          {ideas.length > 4 && <p><Link href="#all">See all {ideas.length} ideas</Link></p>}
+          <h2>Next steps</h2>
+          <Steps items={steps} empty="Nothing needs your action right now." />
+          {ideas.length > 4 && (
+            <section id="all" className="card">
+              <h2>All my ideas</h2>
+              <ul className="plain">{ideas.map((i) => <li key={i.id}><Link href={`/app/ideas/${i.id}`}>{i.title}</Link> <StageLabel stage={i.stage} /></li>)}</ul>
+            </section>
+          )}
+        </div>
+        <aside className="dash-side">
+          <h2>Statistics</h2>
+          <div className="dstats">
+            <Stat label="Ideas submitted" value={ideas.length} />
+            <Stat label="In review" value={count(['submitted', 'in_review', 'feedback'])} />
+            <Stat label="Taken forward" value={count(['approved', 'awarded'])} />
+            <Stat label="Challenges saved" value={basket.length} />
+          </div>
+          <Activity title="Activity" dates={(alerts ?? []).map((n) => n.created_at)} />
+        </aside>
       </div>
     );
   }
@@ -112,10 +111,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     );
   }
 
-  // Adjudicators and admins: what needs a decision
-  const [{ data: ideas }, { data: assignments }] = await Promise.all([
-    sb.from('ideas').select('id, ref, title, stage, district, submitted_at, stage_changed_at').in('stage', ['submitted', 'in_review', 'approved']).order('stage_changed_at'),
+  // Adjudicators and admins
+  const since = new Date(Date.now() - 7 * 86400000).toISOString();
+  const [{ data: ideas }, { data: assignments }, { data: overview }, { count: pendingReports }, { count: challenges }] = await Promise.all([
+    sb.from('ideas').select('id, ref, title, stage, district, submitted_at, stage_changed_at').neq('stage', 'draft').order('stage_changed_at'),
     sb.from('assignments').select('idea_id, submitted_at'),
+    sb.rpc('report_overview'),
+    me.role === 'admin' ? sb.from('challenges').select('id', { count: 'exact', head: true }).eq('status', 'pending') : Promise.resolve({ count: 0 }),
+    sb.from('challenges').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
   ]);
   const byIdea = new Map<string, { total: number; done: number }>();
   for (const a of assignments ?? []) {
@@ -125,36 +128,43 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     byIdea.set(a.idea_id, x);
   }
   const list = (ideas ?? []) as Pick<Idea, 'id' | 'ref' | 'title' | 'stage' | 'district' | 'submitted_at' | 'stage_changed_at'>[];
-  const newOnes = list.filter((i) => i.stage === 'submitted');
-  const ready = list.filter((i) => i.stage === 'in_review' && (byIdea.get(i.id)?.total ?? 0) > 0 && byIdea.get(i.id)!.done === byIdea.get(i.id)!.total);
-  const scoring = list.filter((i) => i.stage === 'in_review' && !ready.includes(i));
-  const toAward = list.filter((i) => i.stage === 'approved');
-
-  const Block = ({ title, items, note }: { title: string; items: typeof list; note: (i: (typeof list)[number]) => string }) => (
-    <section className="card">
-      <h2>{title} <span className="muted">({items.length})</span></h2>
-      {items.length === 0 ? <p className="muted">Nothing here.</p> : (
-        <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
-          {items.slice(0, 8).map((i) => (
-            <li key={i.id}><Link href={`/app/ideas/${i.id}`}>{i.title}</Link> <small>{i.ref} · {note(i)}</small></li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-
+  const of = (st: string) => list.filter((i) => i.stage === st);
+  const total = Math.max(1, list.length);
+  const ready = of('in_review').filter((i) => (byIdea.get(i.id)?.total ?? 0) > 0 && byIdea.get(i.id)!.done === byIdea.get(i.id)!.total);
+  const o = overview as { totals: { submitters: number }; avg_days_to_decision: number | null } | null;
+  const steps: Step[] = [
+    ...of('submitted').slice(0, 3).map((i) => ({ href: `/app/ideas/${i.id}`, icon: 'send' as const, title: `Assign evaluators: ${i.title}`, sub: `${i.ref} · since ${fmtDate(i.submitted_at)}`, t: 'maroon' as const })),
+    ...ready.slice(0, 3).map((i) => ({ href: `/app/ideas/${i.id}`, icon: 'review' as const, title: `Ready to decide: ${i.title}`, sub: `${byIdea.get(i.id)?.done} evaluators done`, t: 'orange' as const })),
+    ...of('approved').slice(0, 3).map((i) => ({ href: `/app/ideas/${i.id}`, icon: 'award' as const, title: `Ready to award: ${i.title}`, sub: `Approved ${fmtDate(i.stage_changed_at)}`, t: 'gold' as const })),
+    ...(pendingReports ? [{ href: '/app/moderation', icon: 'check' as const, title: `${pendingReports} community ${pendingReports === 1 ? 'report' : 'reports'} to check`, sub: 'Approve before they go on the map', t: 'brown' as const }] : []),
+  ];
+  const tiles: { st: string; label: string; icon: IconName; href: string }[] = [
+    { st: 'submitted', label: 'New ideas', icon: 'send', href: '/app/ideas?stage=submitted' },
+    { st: 'in_review', label: 'In review', icon: 'review', href: '/app/ideas?stage=in_review' },
+    { st: 'feedback', label: 'Needs changes', icon: 'chat', href: '/app/ideas?stage=feedback' },
+    { st: 'approved', label: 'Approved', icon: 'check', href: '/app/ideas?stage=approved' },
+  ];
   return (
-    <div className="stack">
-      <div className="row between">
-        <h1>What needs attention</h1>
-        <Link className="btn secondary" href="/app/ideas">See all ideas</Link>
+    <div className="dash">
+      <div className="dash-main">
+        <p className="dash-hello">{hello(me.full_name)}, welcome back</p>
+        <div className="row between"><h1>Overview</h1><Link className="btn secondary small" href="/app/ideas">All ideas</Link></div>
+        <div className="dtiles">
+          {tiles.map((x, k) => <Tile key={x.st} href={x.href} title={x.label} sub={`${of(x.st).length} ${of(x.st).length === 1 ? 'idea' : 'ideas'}`} pct={(of(x.st).length / total) * 100} icon={x.icon} t={tone(k)} />)}
+        </div>
+        <h2>What needs attention</h2>
+        <Steps items={steps} empty="Nothing is waiting on you. Well done." />
       </div>
-      <div className="grid cols-2">
-        <Block title="New, assign evaluators" items={newOnes} note={(i) => `since ${fmtDate(i.submitted_at)}`} />
-        <Block title="Scored, ready to decide" items={ready} note={(i) => `${byIdea.get(i.id)?.done} evaluators done`} />
-        <Block title="Being scored" items={scoring} note={(i) => `${byIdea.get(i.id)?.done ?? 0} of ${byIdea.get(i.id)?.total ?? 0} done`} />
-        <Block title="Approved, ready to award" items={toAward} note={(i) => `approved ${fmtDate(i.stage_changed_at)}`} />
-      </div>
+      <aside className="dash-side">
+        <h2>Statistics</h2>
+        <div className="dstats">
+          <Stat label="Ideas in the portal" value={list.length} />
+          <Stat label="Innovators taking part" value={o?.totals.submitters ?? 0} />
+          <Stat label="Community challenges" value={challenges ?? 0} />
+          <Stat label="Average days to decide" value={o?.avg_days_to_decision ?? '-'} />
+        </div>
+        <Activity title="New ideas" dates={list.filter((i) => (i.submitted_at ?? '') >= since).map((i) => i.submitted_at)} />
+      </aside>
     </div>
   );
 }
