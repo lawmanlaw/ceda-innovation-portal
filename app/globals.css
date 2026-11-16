@@ -278,3 +278,4 @@ li:hover > .icon, .card:hover > .icon { transform: translateY(-2px); }
 .card:nth-child(2) .sk { animation-delay: 150ms; }
 .card:nth-child(3) .sk { animation-delay: 300ms; }
 .card:nth-child(4) .sk { animation-delay: 450ms; }
+.row > .sk, .track > .sk { margin-top: 0; }
