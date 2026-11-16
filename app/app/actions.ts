@@ -191,3 +191,32 @@ export async function declareConflict(_: ActionState, f: FormData): Promise<Acti
   if (error) return { error: friendlyError(error) };
   redirect('/app?conflict=1');
 }
+
+export async function moderateChallenge(_: ActionState, f: FormData): Promise<ActionState> {
+  await requireMe('admin');
+  const id = uuid.safeParse(f.get('challenge_id'));
+  if (!id.success) return { error: 'Not found.' };
+  const all = f.getAll('decision'); // hidden default first, then the button that was pressed
+  const decision = String(all[all.length - 1]);
+  const sb = await supabaseServer();
+  const { error } = await sb.rpc('moderate_challenge', {
+    p_challenge: id.data, p_approve: decision !== 'reject', p_keep_photo: decision === 'approve',
+    p_note: String(f.get('note') ?? '').slice(0, 300),
+  });
+  if (error) return { error: friendlyError(error) };
+  revalidatePath('/app/moderation');
+  revalidatePath('/challenges');
+  return { ok: decision === 'reject' ? 'Not published.' : 'Published to the challenge map.' };
+}
+
+export async function linkServerKey(): Promise<ActionState> {
+  await requireMe('admin');
+  const key = process.env.COMMUNITY_SERVER_KEY ?? '';
+  if (key.length < 32) return { error: 'Add COMMUNITY_SERVER_KEY (at least 32 characters) in the Vercel project settings and redeploy first.' };
+  const { createHash } = await import('node:crypto');
+  const sb = await supabaseServer();
+  const { error } = await sb.rpc('set_server_key_hash', { p_hash: createHash('sha256').update(key).digest('hex') });
+  if (error) return { error: friendlyError(error) };
+  revalidatePath('/app/admin');
+  return { ok: 'Community reports and upvotes are now connected.' };
+}

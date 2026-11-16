@@ -51,3 +51,11 @@ export function locationFacts(lat: number, lng: number): LocationFacts | null {
   const near = CEDA_OFFICES.map((o) => ({ ...o, d: km(lat, lng, o.lat, o.lng) })).sort((a, b) => a.d - b.d)[0];
   return { district: area.name, urban: Boolean(town), population: area.pop, office: near.name, officeKm: Math.round(near.d) };
 }
+
+// A representative point for a district or town, for "near me" when only the profile district is known
+export function districtPoint(name: string | null | undefined): { lat: number; lng: number } | null {
+  const t = TOWNS.find((x) => x.name === name);
+  const r = REGIONS.find((x) => x.name === name);
+  const p = t ? { x: t.x, y: t.y } : r ? { x: r.lx, y: r.ly } : null;
+  return p ? { lat: LAT0 - p.y / 100, lng: p.x / (100 * COS) + LNG0 } : null;
+}

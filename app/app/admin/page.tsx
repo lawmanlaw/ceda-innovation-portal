@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requireMe, supabaseServer } from '@/lib/supabase/server';
+import LinkKey from '@/components/link-key';
 import ActionForm from '@/components/action-form';
 import { ROLE_LABEL, type FormField, type Role } from '@/lib/types';
 import { fmtDate } from '@/lib/util';
@@ -209,6 +210,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   return (
     <div className="stack">
       <h1>Settings</h1>
+      <LinkKey linked={Boolean((await (await supabaseServer()).rpc('server_key_linked')).data)} />
       <nav className="nav" aria-label="Settings sections">
         {TABS.map(([k, label]) => <Link key={k} href={`/app/admin?tab=${k}`} aria-current={k === tab ? 'page' : undefined}>{label}</Link>)}
       </nav>
