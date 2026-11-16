@@ -28,6 +28,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
         <div className="wrap">
           <Link href="/" className="brand"><span className="brand-mark"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /></span><i className="brand-rule" aria-hidden="true" /><span className="brand-name"><span>Innovation Portal</span></span></Link>
           <nav className="nav" aria-label="Main">
+            <Link href="/challenges">Challenges</Link>
+            <Link href="/report">Report a problem</Link>
             <Link href="/help">Help</Link>
             {me ? <Link href="/app">My dashboard</Link> : <Link href="/login">Sign in</Link>}
           </nav>

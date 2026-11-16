@@ -38,6 +38,18 @@ export default async function Reports() {
   const { data, error } = await sb.rpc('report_overview');
   if (error || !data) return <p className="notice bad">Reports are not available right now. Please try again.</p>;
   const r = data as Overview;
+  const ch = (await sb.rpc('challenge_report')).data as null | {
+    by_status: Record<string, number>; by_district: Record<string, number>; votes: number; saved: number; innovators_engaged: number;
+    top: { title: string; district: string | null; upvotes: number; saved: number }[];
+  };
+  const n = (k: string[]) => k.reduce((a, s) => a + (r.by_stage[s] ?? 0), 0);
+  const total = Math.max(1, n(Object.keys(r.by_stage)));
+  const funnel = [
+    { label: 'Submitted', v: total },
+    { label: 'Reached review', v: n(['in_review', 'feedback', 'approved', 'awarded', 'rejected']) },
+    { label: 'Approved', v: n(['approved', 'awarded']) },
+    { label: 'Awarded', v: n(['awarded']) },
+  ];
 
   return (
     <div className="stack">
@@ -91,6 +103,36 @@ export default async function Reports() {
           </table>
         </section>
       </div>
+
+      <section className="card">
+        <h2>Stage progress</h2>
+        <p className="muted">How far ideas get through the process.</p>
+        <Bars rows={funnel.map((f) => ({ label: `${f.label} (${Math.round((f.v / total) * 100)}%)`, n: f.v }))} />
+      </section>
+
+      {ch && (
+        <>
+          <h2>Community challenges</h2>
+          <div className="grid cols-4">
+            <div className="card stat"><strong>{ch.by_status.approved ?? 0}</strong><span>challenges on the map</span></div>
+            <div className="card stat"><strong>{ch.by_status.pending ?? 0}</strong><span>waiting for moderation</span></div>
+            <div className="card stat"><strong>{ch.votes}</strong><span>community upvotes</span></div>
+            <div className="card stat"><strong>{ch.innovators_engaged}</strong><span>innovators browsing ({ch.saved} saved)</span></div>
+          </div>
+          <div className="grid cols-2">
+            <section className="card">
+              <h2>Most felt problems</h2>
+              <table><thead><tr><th>Challenge</th><th>Upvotes</th><th>Saved</th></tr></thead><tbody>
+                {ch.top.map((t) => <tr key={t.title}><td>{t.title}<br /><small>{t.district}</small></td><td>{t.upvotes}</td><td>{t.saved}</td></tr>)}
+              </tbody></table>
+            </section>
+            <section className="card">
+              <h2>Challenges by district</h2>
+              <Bars rows={Object.entries(ch.by_district).map(([label, v]) => ({ label, n: v })).sort((a, b) => b.n - a.n)} />
+            </section>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -7,10 +7,10 @@ import Dock from '@/components/dock';
 import Tour from '@/components/tour';
 
 const NAV: Record<Role, [string, string][]> = {
-  submitter: [['/app', 'My ideas'], ['/app/ideas/new', 'Submit an idea'], ['/app/chat', 'Chat with CEDA']],
+  submitter: [['/app', 'My ideas'], ['/app/challenges', 'Challenges'], ['/app/ideas/new', 'Submit an idea'], ['/app/chat', 'Chat with CEDA']],
   evaluator: [['/app', 'To evaluate']],
   adjudicator: [['/app', 'Overview'], ['/app/ideas', 'All ideas'], ['/app/reports', 'Reports']],
-  admin: [['/app', 'Overview'], ['/app/ideas', 'All ideas'], ['/app/reports', 'Reports'], ['/app/agent', 'Live chat'], ['/app/admin', 'Settings'], ['/app/audit', 'Audit trail']],
+  admin: [['/app', 'Overview'], ['/app/ideas', 'All ideas'], ['/app/reports', 'Reports'], ['/app/agent', 'Live chat'], ['/app/moderation', 'Moderation'], ['/app/admin', 'Settings'], ['/app/audit', 'Audit trail']],
   agent: [['/app/agent', 'Live chat']],
   observer: [['/app/ideas', 'All ideas']],
 };

@@ -5,11 +5,12 @@ const supabaseWs = supabase.replace(/^https/, 'wss');
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+  "frame-src https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${supabase} https://tile.openstreetmap.org`,
   "font-src 'self'",
-  `connect-src 'self' ${supabase} ${supabaseWs}`,
+  `connect-src 'self' ${supabase} ${supabaseWs} https://challenges.cloudflare.com`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -18,6 +19,7 @@ const csp = [
 
 /** @type {import('next').NextConfig} */
 const config = {
+  experimental: { serverActions: { bodySizeLimit: '9mb' } },
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
   async headers() {
