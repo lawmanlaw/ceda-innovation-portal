@@ -392,3 +392,11 @@ li:hover > .icon, .card:hover > .icon { transform: translateY(-2px); }
 
 .widget-error { position: fixed; right: 20px; bottom: 20px; z-index: 70; max-width: 340px; background: var(--surface); border-radius: 12px; padding: 1rem; box-shadow: 0 8px 24px rgb(63 44 36 / .2); display: grid; gap: .5rem; }
 .widget-error code { font-size: .8rem; color: var(--bad); white-space: pre-wrap; word-break: break-word; }
+
+/* Sign-in: form centred in its column, photo stays put while the form scrolls */
+.auth-photo { position: sticky; top: 0; height: 100vh; }
+.auth-form { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 1.5rem 0; }
+.auth-form > p:first-child { display: flex; justify-content: center; margin: 0 0 1rem; }
+.auth-form > p:first-child .brand { margin-right: 0; }
+.auth-form h1 { text-align: center; }
+.auth-form .card > form > .muted:first-of-type { text-align: center; }
