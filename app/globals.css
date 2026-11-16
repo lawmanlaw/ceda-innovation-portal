@@ -400,3 +400,35 @@ li:hover > .icon, .card:hover > .icon { transform: translateY(-2px); }
 .auth-form > p:first-child .brand { margin-right: 0; }
 .auth-form h1 { text-align: center; }
 .auth-form .card > form > .muted:first-of-type { text-align: center; }
+
+/* District map on All ideas */
+.dmap-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.dmap-head h2 { font-size: 1.1rem; margin: 0; }
+.dmap-legend { display: flex; align-items: center; gap: .3rem; font-size: .8rem; color: var(--ink-3); }
+.dmap-legend i { width: 18px; height: 10px; border-radius: 2px; }
+.dmap-box { position: relative; max-width: 560px; margin: .5rem auto 0; touch-action: manipulation; }
+.dmap-box svg { display: block; width: 100%; height: auto; overflow: visible; }
+.dmap-region { stroke: #fff; stroke-width: 2.5; stroke-linejoin: round; cursor: pointer; outline: none; transition: opacity var(--motion-150) var(--ease-out); }
+.dmap-box:has(.hot) .dmap-region:not(.hot) { opacity: .55; }
+.dmap-outline { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; pointer-events: none; }
+.dmap-outline.on { stroke: var(--accent); stroke-width: 4; }
+.dmap-label { font-size: 24px; font-weight: 600; fill: var(--ink-2); text-anchor: middle; pointer-events: none; }
+.dmap-label.light { fill: #fff; }
+.dmap-town { cursor: pointer; outline: none; }
+.dmap-town .hit { fill: transparent; }
+.dmap-town .area { fill: var(--accent); opacity: .35; }
+.dmap-pop { display: block; font-size: .8rem; color: var(--ink-3); margin: -.25rem 0 .4rem; }
+.dmap-town .dot { fill: var(--accent); stroke: #fff; stroke-width: 3; transition: transform var(--motion-150) var(--ease-out); transform-box: fill-box; transform-origin: center; }
+.dmap-town.hot .dot, .dmap-town:focus-visible .dot { transform: scale(1.4); }
+.dmap-town.on .dot { fill: var(--brand); }
+.dmap-tip { position: absolute; z-index: 5; min-width: 190px; max-width: 240px; padding: .75rem .9rem; background: var(--surface); border-radius: var(--radius); box-shadow: 0 8px 24px rgb(63 44 36 / .16); transform: translate(14px, -50%); pointer-events: none; animation: dmap-tip var(--motion-150) var(--ease-out) both; }
+.dmap-tip.flip { transform: translate(calc(-100% - 14px), -50%); }
+.dmap-tip:has(button) { pointer-events: auto; }
+.dmap-tip strong { display: block; color: var(--brand); }
+.dmap-total { display: block; font-size: .9rem; color: var(--ink-2); margin-bottom: .35rem; }
+.dmap-tip ul { list-style: none; margin: 0 0 .4rem; padding: 0; font-size: .88rem; }
+.dmap-tip li { display: flex; justify-content: space-between; gap: .75rem; padding: .1rem 0; }
+.dmap-tip li .stage { font-weight: 500; }
+.dmap-tip .btn { width: 100%; margin-top: .25rem; }
+@keyframes dmap-tip { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dmap-tip { animation: none; } .dmap-town .dot, .dmap-region { transition: none; } }

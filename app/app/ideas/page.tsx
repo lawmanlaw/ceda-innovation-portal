@@ -3,6 +3,7 @@ import { requireMe, supabaseServer } from '@/lib/supabase/server';
 import { StageLabel } from '@/components/stage';
 import { STAGE_LABEL, type Stage } from '@/lib/types';
 import { fmtDate } from '@/lib/util';
+import { DistrictMap, type DistrictStats } from '@/components/district-map';
 
 export const metadata = { title: 'All ideas' };
 
@@ -14,7 +15,17 @@ export default async function AllIdeas({ searchParams }: { searchParams: Promise
   if (sp.stage && sp.stage in STAGE_LABEL) query = query.eq('stage', sp.stage);
   if (sp.district) query = query.eq('district', sp.district.slice(0, 60));
   if (sp.q) query = query.ilike('title', `%${sp.q.slice(0, 80).replace(/[%_\\]/g, '')}%`);
-  const [{ data: ideas }, { data: districts }] = await Promise.all([query, sb.from('districts').select('name').order('name')]);
+  // Map counts follow the stage and search filters but not the district one, so every district stays comparable
+  let mapQuery = sb.from('ideas').select('district, stage').limit(5000);
+  if (sp.stage && sp.stage in STAGE_LABEL) mapQuery = mapQuery.eq('stage', sp.stage);
+  if (sp.q) mapQuery = mapQuery.ilike('title', `%${sp.q.slice(0, 80).replace(/[%_\\]/g, '')}%`);
+  const [{ data: ideas }, { data: districts }, { data: mapRows }] = await Promise.all([query, sb.from('districts').select('name').order('name'), mapQuery]);
+  const stats: DistrictStats = {};
+  for (const r of mapRows ?? []) {
+    const d = (stats[r.district] ??= { total: 0, stages: {} });
+    d.total++;
+    d.stages[r.stage as Stage] = (d.stages[r.stage as Stage] ?? 0) + 1;
+  }
 
   return (
     <div className="stack">
@@ -31,6 +42,7 @@ export default async function AllIdeas({ searchParams }: { searchParams: Promise
         </select>
         <button className="btn secondary">Filter</button>
       </form>
+      <DistrictMap stats={stats} selected={sp.district} />
       <div className="card table-scroll">
         <table>
           <thead><tr><th>Idea</th><th>District</th><th>Stage</th><th>Submitted</th><th>Last change</th></tr></thead>
