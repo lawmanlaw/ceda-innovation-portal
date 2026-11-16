@@ -29,7 +29,10 @@ export default function ChatPane({ threadId, me, closed, onClose }: { threadId: 
     };
   }, [sb, threadId]);
 
-  useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [msgs.length]);
+  // Braces matter: newer browsers return a promise from scrollIntoView, which React would treat as a cleanup
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: 'end' });
+  }, [msgs.length]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
