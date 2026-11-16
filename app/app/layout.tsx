@@ -5,6 +5,7 @@ import NavLinks from '@/components/nav-links';
 import Notifications from '@/components/notifications';
 import Dock from '@/components/dock';
 import Tour from '@/components/tour';
+import Sidebar from '@/components/sidebar';
 
 const NAV: Record<Role, [string, string][]> = {
   submitter: [['/app', 'My ideas'], ['/app/challenges', 'Challenges'], ['/app/ideas/new', 'Submit an idea'], ['/app/chat', 'Chat with CEDA']],
@@ -40,7 +41,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <main id="main" className="has-dock">
-        <div className="wrap">{children}</div>
+        <div className="wrap app-shell">
+          <Sidebar links={NAV[me.role]} helpHref={me.role === 'submitter' ? '/app/chat' : '/help'} />
+          <div className="app-body">{children}</div>
+        </div>
       </main>
       <Dock role={me.role} />
       {me.role === 'submitter' && <Tour />}
