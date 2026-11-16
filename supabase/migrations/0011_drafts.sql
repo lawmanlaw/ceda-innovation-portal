@@ -4,6 +4,7 @@
 -- Drafts may be incomplete; the full rules apply when submitting
 alter table public.ideas drop constraint if exists ideas_title_check;
 alter table public.ideas drop constraint if exists ideas_summary_check;
+alter table public.ideas drop constraint if exists ideas_draft_size;
 alter table public.ideas add constraint ideas_title_check check (stage = 'draft' or char_length(title) between 5 and 150);
 alter table public.ideas add constraint ideas_summary_check check (stage = 'draft' or char_length(summary) between 20 and 600);
 alter table public.ideas add constraint ideas_draft_size check (char_length(title) <= 150 and char_length(summary) <= 600);
