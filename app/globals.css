@@ -378,3 +378,6 @@ li:hover > .icon, .card:hover > .icon { transform: translateY(-2px); }
 .authority h3 { font-size: 1rem; margin: 0; }
 .authority p { margin: 0; font-size: .92rem; }
 .authority-links { margin-top: auto; padding-top: .5rem; display: grid; gap: .2rem; font-size: .92rem; }
+
+.widget-error { position: fixed; right: 20px; bottom: 20px; z-index: 70; max-width: 340px; background: var(--surface); border-radius: 12px; padding: 1rem; box-shadow: 0 8px 24px rgb(63 44 36 / .2); display: grid; gap: .5rem; }
+.widget-error code { font-size: .8rem; color: var(--bad); white-space: pre-wrap; word-break: break-word; }
