@@ -12,7 +12,7 @@ create table storage.objects (id uuid default gen_random_uuid(), bucket_id text,
 create function storage.foldername(n text) returns text[] language sql as $$ select string_to_array(n,'/') $$;
 grant usage on schema public, auth, storage to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -88,3 +88,8 @@ const evil = "Robert'); drop table public.ideas; --";
 check('sql injection stored as plain text', await as('other', `select title from public.submit_idea($1,'A summary that is long enough to pass',1::smallint,'Gaborone',$2)`, [evil, {...answers, problem:"x' or '1'='1"}]), r=>Array.isArray(r) && r[0].title===evil);
 check('tables intact after injection', (await db.query(`select count(*)::int n from public.ideas`)).rows[0].n, n=>n>5);
 check('injected district rejected', await as('other', `select public.submit_idea('Valid title','A summary that is long enough to pass',1::smallint,$1,$2)`, ["Gaborone' or 1=1 --", answers]), r=>typeof r==='string');
+
+check('staff cannot self-delete', await as('ev', `select public.delete_my_account()`), r=>typeof r==='string' && r.includes('administrator'));
+check('innovator deletes account', await as('sub', `select public.delete_my_account()`), r=>Array.isArray(r));
+check('account and ideas gone', (await db.query(`select (select count(*) from auth.users where id=$1)::int u, (select count(*) from public.ideas where owner_id=$1)::int i`,[U.sub])).rows[0], r=>r.u===0 && r.i===0);
+check('deletion audited', (await db.query(`select count(*)::int n from public.audit_log where action='account_deleted'`)).rows[0].n, n=>n===1);

@@ -29,7 +29,7 @@ A web portal where people submit ideas to CEDA, evaluation teams score them agai
 - **No secrets in the browser.** The app uses only the publishable key; there is no service key in this codebase.
 - Security headers (CSP, frame blocking, HSTS), no `X-Powered-By`, no browser source maps, safe redirects, CSV export protected against formula injection, sign-in messages that don't reveal who is registered.
 
-Run the database security tests (48 checks, no Supabase account needed):
+Run the database security tests (53 checks, no Supabase account needed):
 
 ```
 npm run test:db
