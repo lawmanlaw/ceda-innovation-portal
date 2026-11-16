@@ -18,7 +18,7 @@ export default function Notifications({ userId }: { userId: string }) {
     sb.from('notifications').select('id, idea_id, title, body, read_at, created_at').order('created_at', { ascending: false }).limit(20)
       .then(({ data }: { data: unknown }) => alive && setItems((data as N[]) ?? []));
     const ch = sb
-      .channel('notifications:' + userId)
+      .channel(`notifications:${userId}:${crypto.randomUUID()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, (p: { new: unknown }) => {
         setItems((prev) => [p.new as N, ...prev].slice(0, 20));
         router.refresh();
