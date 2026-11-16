@@ -4,6 +4,7 @@ import { ROLE_LABEL, type Role } from '@/lib/types';
 import NavLinks from '@/components/nav-links';
 import Notifications from '@/components/notifications';
 import Dock from '@/components/dock';
+import Tour from '@/components/tour';
 
 const NAV: Record<Role, [string, string][]> = {
   submitter: [['/app', 'My ideas'], ['/app/ideas/new', 'Submit an idea'], ['/app/chat', 'Chat with CEDA']],
@@ -30,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="card" style={{ position: 'absolute', right: 0, top: '110%', width: 240, zIndex: 30 }}>
               <p className="muted" style={{ marginBottom: '.5rem' }}>{ROLE_LABEL[me.role]}</p>
               <Link href="/app/profile" className="btn ghost small" style={{ width: '100%', justifyContent: 'flex-start' }}>Profile and alerts</Link>
+              {me.role === 'submitter' && <Link href="/app?tour=1" className="btn ghost small" style={{ width: '100%', justifyContent: 'flex-start' }}>Replay the tour</Link>}
               <form action="/auth/signout" method="post">
                 <button className="btn ghost small" style={{ width: '100%', justifyContent: 'flex-start' }}>Sign out</button>
               </form>
@@ -41,6 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="wrap">{children}</div>
       </main>
       <Dock role={me.role} />
+      {me.role === 'submitter' && <Tour />}
     </>
   );
 }
