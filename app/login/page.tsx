@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div className="wrap" style={{ maxWidth: 440 }}>
         <p><Link href="/" className="brand"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /><span>Innovation Portal</span></Link></p>
         <div className="card">
-          {error === 'oauth' && <p className="notice bad">Google sign-in did not finish. Please try again or use your email.</p>}
+          {error === 'oauth' && <p className="notice bad">That link did not work or has expired. Please try again.</p>}
           <AuthForm initialMode={mode === 'signup' ? 'signup' : 'signin'} districts={(districts ?? []).map((d) => d.name)} />
         </div>
       </div>
