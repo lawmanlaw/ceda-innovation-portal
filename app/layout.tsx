@@ -4,6 +4,7 @@ import '@fontsource/saira/600.css';
 import './globals.css';
 import Link from 'next/link';
 import ChatWidget from '@/components/chat-widget';
+import Safe from '@/components/safe';
 import { getMe } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <a href="#main" className="skip">Skip to content</a>
         {children}
-        <ChatWidget userId={me?.id ?? null} hide={me?.role === 'agent'} />
+        <Safe label="Live chat"><ChatWidget userId={me?.id ?? null} hide={me?.role === 'agent'} /></Safe>
         <footer className="wrap muted" style={{ padding: '1.5rem 0 2rem', fontSize: '.85rem' }}>
           <Link href="/help#privacy">Privacy</Link> · <Link href="/help#support">Support</Link>
         </footer>
