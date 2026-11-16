@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
+import { emailLinkClient } from '@/lib/supabase/email-links';
 import Icon from '@/components/icon';
 
 type Mode = 'signin' | 'code' | 'signup' | 'verify' | 'forgot' | 'reset';
@@ -43,7 +44,7 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
 
   // Same wording whether or not the account exists, so the form can't be used to find out who is registered
   const sentCode = 'If that email is registered, we have sent a 6 digit code to it. It expires in 10 minutes.';
-  const sentLink = 'If that email is registered, we have sent you a sign-in link. Open it on this device. It expires in 1 hour.';
+  const sentLink = 'If that email is registered, we have sent you a sign-in link. Tap it on any device to sign in. It expires in 1 hour.';
 
   async function oauth(provider: 'google') {
     setError(null);
@@ -73,7 +74,7 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
       }
       if (mode === 'code') {
         setEmail(v('email'));
-        await sb.auth.signInWithOtp({ email: v('email'), options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/auth/callback` } });
+        await emailLinkClient().auth.signInWithOtp({ email: v('email'), options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/auth/confirm` } });
         setInfo(sentLink);
         return;
       }
@@ -82,17 +83,17 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
         if (password.length < 10) throw new Error('Use at least 10 characters for your password.');
         if (password !== String(f.get('password2'))) throw new Error('The two passwords do not match.');
         if (!f.get('consent')) throw new Error('Please agree to the privacy notice to continue.');
-        const { error } = await sb.auth.signUp({
+        const { error } = await emailLinkClient().auth.signUp({
           email: v('email'),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/auth/confirm`,
             data: { full_name: v('full_name'), organisation: v('organisation'), district: v('district') },
           },
         });
         if (error) throw new Error(error.message.includes('rate') ? 'Too many attempts. Please wait a minute.' : 'We could not create the account. Check your details and try again.');
         setEmail(v('email'));
-        setInfo('Almost done. If this is a new account, we have sent you an email: open it and tap the link to confirm your address. If you already have an account, no email is sent, so sign in instead.');
+        setInfo('Almost done. If this is a new account, we have sent you an email. Tap the link in it on any device and you will be signed in straight away. If you already have an account, no email is sent, so sign in instead.');
         return;
       }
       if (mode === 'verify') {
@@ -103,7 +104,7 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
       }
       if (mode === 'forgot') {
         setEmail(v('email'));
-        await sb.auth.resetPasswordForEmail(v('email'), { redirectTo: `${window.location.origin}/auth/callback?next=/reset-password` });
+        await emailLinkClient().auth.resetPasswordForEmail(v('email'), { redirectTo: `${window.location.origin}/auth/confirm` });
         setInfo(sentLink);
         return;
       }
