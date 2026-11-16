@@ -7,8 +7,10 @@ import ActionForm from '@/components/action-form';
 import Uploader from '@/components/uploader';
 import { STAGE_LABEL, type Idea, type Stage, type FormField } from '@/lib/types';
 import { fmtDate } from '@/lib/util';
+import { locationFacts, project } from '@/lib/geo';
+import { MAP_W, MAP_H, REGIONS } from '@/lib/bw-map';
 import {
-  assignEvaluator, moveIdea, postFeedback, removeAttachment, saveScores, unassignEvaluator, withdrawIdea,
+  assignEvaluator, declareConflict, moveIdea, postFeedback, removeAttachment, saveScores, unassignEvaluator, withdrawIdea,
 } from '@/app/app/actions';
 
 const SCORE_WORDS = ['Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
@@ -72,6 +74,11 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
   }
 
   // Evaluator scoring
+  const facts = idea.lat != null && idea.lng != null ? locationFacts(idea.lat, idea.lng) : null;
+  const staff = !isOwner && me.role !== 'submitter';
+  type Similar = { id: string; ref: string; title: string; district: string; km: number; connect_ok: boolean };
+  const similar: Similar[] | null = staff && idea.lat != null ? ((await sb.rpc('similar_ideas', { p_idea: id })).data as Similar[] | null) : null;
+
   const canScore = me.role === 'evaluator' && !!myAssignment && !myAssignment.submitted_at && idea.stage === 'in_review';
   let criteria: { id: string; name: string; description: string | null; max_score: number; weight: number }[] = [];
   let myScores = new Map<string, { score: number; comment: string | null }>();
@@ -206,6 +213,48 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
         </div>
 
         <aside className="stack">
+          {idea.lat != null && idea.lng != null && (isOwner || staff) && (
+            <section className="card">
+              <h2>Location</h2>
+              <svg viewBox={`-6 -6 ${MAP_W + 12} ${MAP_H + 12}`} className="mini-map" role="img" aria-label={`Pin in ${facts?.district ?? 'Botswana'}`}>
+                {REGIONS.map((r) => <path key={r.name} d={r.d} />)}
+                <circle cx={project(idea.lat, idea.lng).x} cy={project(idea.lat, idea.lng).y} r={16} />
+              </svg>
+              {facts ? (
+                <dl className="facts">
+                  <dt>District</dt><dd>{facts.district}</dd>
+                  <dt>Setting</dt><dd>{facts.urban ? 'Urban (town council area)' : 'Rural or village area'}</dd>
+                  <dt>Population</dt><dd>{facts.population.toLocaleString('en-GB')} (2011 census)</dd>
+                  <dt>Nearest CEDA office</dt><dd>{facts.office}, about {facts.officeKm} km</dd>
+                </dl>
+              ) : <p className="muted">Pinned outside the census districts.</p>}
+              {staff && <p className="muted" style={{ fontSize: '.85rem' }}>{idea.lat.toFixed(4)}, {idea.lng.toFixed(4)} · <a href={`https://www.openstreetmap.org/?mlat=${idea.lat}&mlon=${idea.lng}#map=13/${idea.lat}/${idea.lng}`} target="_blank" rel="noopener noreferrer">Open in map</a></p>}
+            </section>
+          )}
+          {staff && similar && similar.length > 0 && (
+            <section className="card">
+              <h2>Similar ideas nearby</h2>
+              <p className="muted">Same sector, within 100 km.</p>
+              <ul className="plain">
+                {similar.map((o) => (
+                  <li key={o.id}>
+                    {isPanel ? <Link href={`/app/ideas/${o.id}`}>{o.title}</Link> : <strong>{o.title}</strong>}
+                    <br /><small>{o.ref} · {o.district} · {o.km} km away · {o.connect_ok ? 'happy to be connected' : 'not consented to contact'}</small>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {me.role === 'evaluator' && myAssignment && !myAssignment.submitted_at && (
+            <details className="card">
+              <summary className="btn ghost small" style={{ listStyle: 'none' }}>I have a conflict of interest</summary>
+              <p className="muted">If you know the applicant or have a stake in this idea, step out. It goes to another reviewer automatically, any scores you saved are removed, and your declaration is recorded in the audit trail.</p>
+              <ActionForm action={declareConflict} submit="Step out of this review">
+                <input type="hidden" name="idea_id" value={id} />
+                <div className="field"><label htmlFor="reason">Reason</label><textarea id="reason" name="reason" required minLength={3} maxLength={500} rows={2} placeholder="For example: the applicant is a relative" /></div>
+              </ActionForm>
+            </details>
+          )}
           {panel && (
             <>
               <section className="card">

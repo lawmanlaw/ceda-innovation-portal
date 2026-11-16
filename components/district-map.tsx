@@ -2,7 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { MAP_W, MAP_H, REGIONS, TOWNS } from '@/lib/bw-map';
+import { project } from '@/lib/geo';
 import { STAGE_LABEL, type Stage } from '@/lib/types';
 
 export type DistrictStats = Record<string, { total: number; stages: Partial<Record<Stage, number>> }>;
@@ -11,17 +13,23 @@ const STEPS = ['#f3ebe7', '#e3c4b8', '#c27a64', '#7a1e1e'];
 
 function step(n: number, max: number) {
   if (!n) return 0;
-  if (max <= 3) return Math.min(n, 3);
-  return Math.min(3, Math.ceil((n / max) * 3));
+  return Math.min(3, Math.max(1, Math.ceil((n / max) * 3)));
 }
 
-export function DistrictMap({ stats, selected }: { stats: DistrictStats; selected?: string }) {
+type Pin = { id: string; title: string; lat: number; lng: number };
+const POP: Record<string, number> = Object.fromEntries([...REGIONS, ...TOWNS].map((r) => [r.name, r.pop]));
+const rate = (n: number, name: string) => (POP[name] ? (n / POP[name]) * 10000 : 0);
+
+export function DistrictMap({ stats, selected, pins = [] }: { stats: DistrictStats; selected?: string; pins?: Pin[] }) {
+  const [metric, setMetric] = useState<'count' | 'rate'>('count');
+  const [showPins, setShowPins] = useState(true);
+  const value = (name: string) => { const n = stats[name]?.total ?? 0; return metric === 'count' ? n : rate(n, name); };
   const router = useRouter();
   const params = useSearchParams();
   const box = useRef<HTMLDivElement>(null);
   const lastPointer = useRef(0);
   const [tip, setTip] = useState<{ name: string; x: number; y: number; pinned: boolean } | null>(null);
-  const max = Math.max(1, ...Object.values(stats).map((s) => s.total));
+  const max = Math.max(metric === 'count' ? 1 : 0.0001, ...Object.keys(POP).map(value));
 
   function show(name: string, e: { clientX: number; clientY: number }, pinned = false) {
     const r = box.current?.getBoundingClientRect();
@@ -68,6 +76,13 @@ export function DistrictMap({ stats, selected }: { stats: DistrictStats; selecte
     <div className="dmap card">
       <div className="dmap-head">
         <h2>Ideas by district</h2>
+        <div className="row" style={{ gap: '.5rem' }}>
+          <div className="seg" role="group" aria-label="Colour districts by">
+            <button type="button" aria-pressed={metric === 'count'} onClick={() => setMetric('count')}>Number of ideas</button>
+            <button type="button" aria-pressed={metric === 'rate'} onClick={() => setMetric('rate')}>Per 10,000 people</button>
+          </div>
+          {pins.length > 0 && <label className="row consent" style={{ fontSize: '.85rem' }}><input type="checkbox" checked={showPins} onChange={(e) => setShowPins(e.target.checked)} /><span>Pins</span></label>}
+        </div>
         <div className="dmap-legend" aria-hidden="true">
           <span>Fewer</span>{STEPS.map((c) => <i key={c} style={{ background: c }} />)}<span>More</span>
         </div>
@@ -75,14 +90,14 @@ export function DistrictMap({ stats, selected }: { stats: DistrictStats; selecte
       <div className="dmap-box" ref={box} onPointerDown={(e) => { if (e.target === e.currentTarget) setTip(null); }}>
         <svg viewBox={`-6 -6 ${MAP_W + 12} ${MAP_H + 12}`} role="group" aria-label="Map of Botswana districts. Choose a district to filter the ideas below.">
           {REGIONS.map((r) => (
-            <path key={r.name} d={r.d} fill={STEPS[step(stats[r.name]?.total ?? 0, max)]}
+            <path key={r.name} d={r.d} fill={STEPS[step(value(r.name), max)]}
               className={`dmap-region${selected === r.name ? ' on' : ''}${tip?.name === r.name ? ' hot' : ''}`} {...handlers(r.name)} />
           ))}
           {REGIONS.filter((r) => r.name === selected || r.name === tip?.name).map((r) => (
             <path key={`o-${r.name}`} d={r.d} className={`dmap-outline${r.name === selected ? ' on' : ''}`} aria-hidden="true" />
           ))}
           {REGIONS.map((r) => (
-            <text key={r.name} x={r.lx} y={r.ly} className={`dmap-label${step(stats[r.name]?.total ?? 0, max) === 3 ? ' light' : ''}`} aria-hidden="true">{r.name}</text>
+            <text key={r.name} x={r.lx} y={r.ly} className={`dmap-label${step(value(r.name), max) === 3 ? ' light' : ''}`} aria-hidden="true">{r.name}</text>
           ))}
           {TOWNS.map((t) => (
             <g key={t.name} className={`dmap-town${selected === t.name ? ' on' : ''}${tip?.name === t.name ? ' hot' : ''}`} {...handlers(t.name)}>
@@ -91,12 +106,21 @@ export function DistrictMap({ stats, selected }: { stats: DistrictStats; selecte
               <circle cx={t.x} cy={t.y} r={(stats[t.name]?.total ?? 0) ? 9 : 6} className="dot" />
             </g>
           ))}
+          {showPins && pins.map((p) => {
+            const { x, y } = project(p.lat, p.lng);
+            return (
+              <Link key={p.id} href={`/app/ideas/${p.id}`} className="dmap-pin" aria-label={`Idea: ${p.title}`}>
+                <title>{p.title}</title>
+                <circle cx={x} cy={y} r={7} />
+              </Link>
+            );
+          })}
         </svg>
         {tip && (
           <div className={`dmap-tip${flip ? ' flip' : ''}`} style={{ left: tip.x, top: tip.y }} role="status">
             <strong>{tip.name}</strong>
             <span className="dmap-total">{s?.total ?? 0} {(s?.total ?? 0) === 1 ? 'idea' : 'ideas'}</span>
-            {pop ? <span className="dmap-pop">Population {pop.toLocaleString('en-GB')} (2011 census)</span> : null}
+            {pop ? <span className="dmap-pop">{rate(s?.total ?? 0, tip.name).toFixed(2)} per 10,000 people · population {pop.toLocaleString('en-GB')} (2011)</span> : null}
             {s && s.total > 0 && (
               <ul>
                 {(Object.keys(STAGE_LABEL) as Stage[]).filter((k) => s.stages[k]).map((k) => (

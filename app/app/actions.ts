@@ -179,3 +179,15 @@ export async function updateProfile(_: ActionState, f: FormData): Promise<Action
   revalidatePath('/app/profile');
   return { ok: 'Saved.' };
 }
+
+export async function declareConflict(_: ActionState, f: FormData): Promise<ActionState> {
+  await requireMe('evaluator');
+  const id = uuid.safeParse(f.get('idea_id'));
+  const reason = z.string().trim().min(3, 'Say briefly why, for the record.').max(500).safeParse(f.get('reason') ?? '');
+  if (!id.success) return { error: 'Not found.' };
+  if (!reason.success) return { error: reason.error.issues[0].message };
+  const sb = await supabaseServer();
+  const { error } = await sb.rpc('declare_conflict', { p_idea: id.data, p_reason: reason.data });
+  if (error) return { error: friendlyError(error) };
+  redirect('/app?conflict=1');
+}

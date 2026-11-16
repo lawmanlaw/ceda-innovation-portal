@@ -510,3 +510,23 @@ input[aria-invalid="true"] { border-color: var(--bad); }
   .bk-eyes, .bk[data-mode="wave"] .bk-wave, .bk[data-mode="no"] .bk-head, .tour.dim, .tour-card { animation: none; }
   .bk-hand, .bk-thumb, .bk-wave, .bk-pupils, .tour-spot { transition: none; }
 }
+
+/* Pin picker */
+.pin-map { height: 300px; border-radius: var(--radius); overflow: hidden; background: var(--bg); margin-bottom: .4rem; z-index: 0; }
+.pin-icon::before { content: ''; position: absolute; left: 2px; top: 0; width: 22px; height: 22px; background: var(--brand); border: 3px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 6px rgb(0 0 0 / .3); }
+.leaflet-container { font: inherit; }
+
+/* Idea location card */
+.mini-map { display: block; width: 100%; max-width: 220px; margin: 0 auto .75rem; }
+.mini-map path { fill: var(--brand-soft); stroke: #fff; stroke-width: 3; }
+.mini-map circle { fill: var(--accent); stroke: #fff; stroke-width: 5; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: .3rem .75rem; margin: 0; font-size: .92rem; }
+.facts dt { color: var(--ink-3); }
+.facts dd { margin: 0; font-weight: 600; }
+ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+
+.seg { display: inline-flex; background: var(--bg); border-radius: var(--radius); padding: 3px; }
+.seg button { border: 0; background: none; padding: .35rem .7rem; border-radius: calc(var(--radius) - 3px); font: inherit; font-size: .85rem; color: var(--ink-2); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--brand); font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+.dmap-pin circle { fill: var(--ink); stroke: #fff; stroke-width: 3; transition: transform var(--motion-150) var(--ease-out); transform-box: fill-box; transform-origin: center; }
+.dmap-pin:hover circle, .dmap-pin:focus-visible circle { transform: scale(1.5); fill: var(--accent); }

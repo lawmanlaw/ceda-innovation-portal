@@ -4,6 +4,10 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import Uploader from '@/components/uploader';
 import Bokamoso from '@/components/bokamoso';
+import dynamic from 'next/dynamic';
+import { locationFacts } from '@/lib/geo';
+
+const PinPicker = dynamic(() => import('@/components/pin-picker'), { ssr: false, loading: () => <div className="pin-map sk" /> });
 import { friendlyError } from '@/lib/util';
 import type { FormField, Idea } from '@/lib/types';
 
@@ -35,6 +39,8 @@ export default function DraftForm({ fields, categories, districts, draft, files,
   const [status, setStatus] = useState<{ kind: 'idle' | 'saving' | 'saved' | 'error'; at?: Date }>({ kind: draft ? 'saved' : 'idle', at: draft ? new Date(draft.updated_at) : undefined });
   const [confirm, setConfirm] = useState(false);
   const [owns, setOwns] = useState(false);
+  const [pin, setPin] = useState<{ lat: number | null; lng: number | null; connect: boolean }>({ lat: draft?.lat ?? null, lng: draft?.lng ?? null, connect: draft?.connect_ok ?? false });
+  const [pinNote, setPinNote] = useState<string | null>(null);
   const [final, setFinal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -87,6 +93,17 @@ export default function DraftForm({ fields, categories, districts, draft, files,
   const set = (patch: Partial<typeof v>) => { setV((p) => ({ ...p, ...patch })); setDirty(true); setErr(null); };
   const setAnswer = (k: string, val: string) => set({ answers: { ...v.answers, [k]: val } });
 
+  async function savePin(next: typeof pin) {
+    setPin(next);
+    const ideaId = idRef.current ?? (await save());
+    if (!ideaId) return setPinNote('Type a title first, then drop your pin.');
+    const { error } = await sb.rpc('set_idea_pin', { p_idea: ideaId, p_lat: next.lat, p_lng: next.lng, p_connect: next.connect });
+    if (error) return setPinNote(friendlyError(error));
+    const f = next.lat != null && next.lng != null ? locationFacts(next.lat, next.lng) : null;
+    if (f && !latest.current.district && districts.includes(f.district)) set({ district: f.district });
+    setPinNote(f ? `That is in ${f.district}. Saved.` : 'Saved.');
+  }
+
   async function submit() {
     setBusy(true);
     setErr(null);
@@ -120,6 +137,7 @@ export default function DraftForm({ fields, categories, districts, draft, files,
     { label: 'Summary of 20 to 600 characters', ok: v.summary.trim().length >= 20, target: 'summary', required: true },
     { label: 'Category and district chosen', ok: Boolean(v.category && v.district), target: v.category ? 'district' : 'category', required: true },
     { label: missing.length ? `${missing.length} required ${missing.length === 1 ? 'question' : 'questions'} still empty` : 'All required questions answered', ok: !missing.length, target: missing[0] ? `a_${missing[0].key}` : 'title', required: true },
+    { label: pin.lat != null ? 'Location pinned on the map' : 'No location pinned yet (recommended, so reviewers see local facts)', ok: pin.lat != null, target: 'pin', required: false },
     { label: files.length ? `${files.length} supporting ${files.length === 1 ? 'file' : 'files'} attached and checked` : 'No supporting files yet (recommended: a plan, pitch deck or photos)', ok: files.length > 0, target: 'files', required: false },
   ];
   const ready = checks.every((c) => c.ok || !c.required) && owns && final;
@@ -177,6 +195,17 @@ export default function DraftForm({ fields, categories, districts, draft, files,
           </div>
         );
       })}
+
+      <div className="field" id="pin" tabIndex={-1}>
+        <label>Where will this idea happen?</label>
+        <span className="hint">Drop a pin. Only CEDA staff and the reviewers of your idea see the exact spot.</span>
+        <PinPicker lat={pin.lat} lng={pin.lng} onChange={(lat, lng) => savePin({ ...pin, lat, lng })} />
+        {pinNote && <span className="field-note ok" role="status">{pinNote}</span>}
+        <label className="row consent" style={{ marginTop: '.5rem' }}>
+          <input type="checkbox" checked={pin.connect} onChange={(e) => savePin({ ...pin, connect: e.target.checked })} />
+          <span>CEDA may connect me with innovators working on similar ideas near me.</span>
+        </label>
+      </div>
 
       <div className="field" id="files" tabIndex={-1}>
         <label>Supporting files</label>

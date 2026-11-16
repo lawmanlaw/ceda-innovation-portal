@@ -44,6 +44,9 @@ export type FormField = {
 
 export type Idea = {
   id: string;
+  lat: number | null;
+  lng: number | null;
+  connect_ok: boolean;
   ref: string;
   owner_id: string;
   title: string;

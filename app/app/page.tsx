@@ -7,7 +7,8 @@ import { fmtDate } from '@/lib/util';
 
 export const metadata = { title: 'Dashboard' };
 
-export default async function Dashboard() {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ conflict?: string }> }) {
+  const sp = await searchParams;
   const me = await requireMe();
   if (me.role === 'agent') redirect('/app/agent');
   if (me.role === 'observer') redirect('/app/ideas');
@@ -89,6 +90,7 @@ export default async function Dashboard() {
     return (
       <div className="stack">
         <h1>Ideas to evaluate</h1>
+        {sp.conflict && <p className="notice" role="status">Thank you. You have stepped out of that review, it has been passed to another reviewer, and your declaration is on record.</p>}
         <p className="muted">{todo.length ? `${todo.length} waiting for your scores.` : 'You are all caught up.'}</p>
         <div className="card table-scroll">
           <table>

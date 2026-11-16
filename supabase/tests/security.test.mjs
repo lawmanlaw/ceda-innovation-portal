@@ -12,7 +12,7 @@ create table storage.objects (id uuid default gen_random_uuid(), bucket_id text,
 create function storage.foldername(n text) returns text[] language sql as $$ select string_to_array(n,'/') $$;
 grant usage on schema public, auth, storage to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -104,6 +104,22 @@ check('only owner logs blocked upload', await as('other', `select public.log_blo
 check('blocked upload audited', await as('sub', `select public.log_blocked_upload($1,'x.pdf','PDF script')`,[d]), r=>Array.isArray(r));
 check('submitted idea is final', await as('sub', `select public.save_draft($1,'Changed','x',1::smallint,'Kweneng',$2)`,[d, answers]), r=>typeof r==='string' && r.includes('can no longer'));
 check('draft autosaves not audited', (await db.query(`select count(*)::int n from public.audit_log where record_id=$1 and new_data->>'stage'='draft'`,[d])).rows[0].n, n=>n===0);
+const d2 = (await as('sub', `select public.save_draft(null,'Borehole pump idea','A solar pump to share between farms nearby',1::smallint,'Kweneng',$1) id`, [answers]))[0]?.id;
+check('pin outside Botswana refused', await as('sub', `select public.set_idea_pin($1,51.5,-0.1,true)`,[d2]), r=>typeof r==='string' && r.includes('Botswana'));
+check('pin saved on draft', await as('sub', `select public.set_idea_pin($1,-24.41,25.49,true)`,[d2]), r=>Array.isArray(r));
+check('others cannot pin my idea', await as('other', `select public.set_idea_pin($1,-24.4,25.5,false)`,[d2]), r=>typeof r==='string');
+check('submitted idea cannot be re-pinned', await as('sub', `select public.set_idea_pin($1,-24.4,25.5,false)`,[d]), r=>typeof r==='string');
+await db.exec(`update public.ideas set lat=-24.65, lng=25.91 where id='${d}'`);
+await as('sub', `select public.submit_draft($1,true)`,[d2]);
+check('panel sees similar idea nearby', await as('adj', `select * from public.similar_ideas($1)`,[d2]), r=>Array.isArray(r) && r.length===1 && Number(r[0].km)>30 && Number(r[0].km)<60);
+check('innovator cannot query similar ideas', await as('sub', `select * from public.similar_ideas($1)`,[d2]), r=>Array.isArray(r) && r.length===0);
+await as('adj', `select public.assign_evaluator($1,$2)`,[d2,U.ev]);
+check('conflict needs a reason', await as('ev', `select public.declare_conflict($1,'')`,[d2]), r=>typeof r==='string');
+check('only assigned reviewer can declare', await as('adj', `select public.declare_conflict($1,'I know them')`,[d2]), r=>typeof r==='string');
+check('reviewer steps out', await as('ev', `select public.declare_conflict($1,'Applicant is my cousin') ok`,[d2]), r=>Array.isArray(r) && r[0].ok===false);
+check('assignment removed', (await db.query(`select count(*)::int n from public.assignments where idea_id=$1`,[d2])).rows[0].n, n=>n===0);
+check('conflict audited', (await db.query(`select count(*)::int n from public.audit_log where table_name='conflicts' and record_id=$1`,[d2])).rows[0].n, n=>n===1);
+check('conflicted reviewer cannot be re-added', await as('adj', `select public.assign_evaluator($1,$2)`,[d2,U.ev]), r=>typeof r==='string' && r.includes('conflict'));
 check('staff cannot self-delete', await as('ev', `select public.delete_my_account()`), r=>typeof r==='string' && r.includes('administrator'));
 check('innovator deletes account', await as('sub', `select public.delete_my_account()`), r=>Array.isArray(r));
 check('account and ideas gone', (await db.query(`select (select count(*) from auth.users where id=$1)::int u, (select count(*) from public.ideas where owner_id=$1)::int i`,[U.sub])).rows[0], r=>r.u===0 && r.i===0);
