@@ -10,7 +10,7 @@ export default async function Help() {
   const [{ data: faqs }, { data: authorities }, { data: pages }, { data: docs }] = await Promise.all([
     sb.from('faqs').select('id, question, answer, topic').eq('published', true).order('sort'),
     sb.from('authorities').select('id, name, remit, phone, email, website').order('sort'),
-    sb.from('pages').select('slug, title, body').in('slug', ['about', 'privacy', 'support', 'hosting']),
+    sb.from('pages').select('slug, title, body').in('slug', ['about', 'privacy', 'support']),
     sb.from('documents').select('id, title, description, storage_path').eq('published', true).order('created_at'),
   ]);
   const page = (slug: string) => pages?.find((p) => p.slug === slug);
@@ -67,7 +67,7 @@ export default async function Help() {
             </div>
           </section>
 
-          {['privacy', 'support', 'hosting'].map((s) =>
+          {['privacy', 'support'].map((s) =>
             page(s) ? (
               <section key={s} id={s} className="card">
                 <h2>{page(s)!.title}</h2>
