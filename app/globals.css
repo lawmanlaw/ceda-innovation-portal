@@ -432,3 +432,11 @@ li:hover > .icon, .card:hover > .icon { transform: translateY(-2px); }
 .dmap-tip .btn { width: 100%; margin-top: .25rem; }
 @keyframes dmap-tip { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .dmap-tip { animation: none; } .dmap-town .dot, .dmap-region { transition: none; } }
+/* Draft save indicator */
+.save-state { margin: 0; font-size: .9rem; color: var(--ink-3); display: inline-flex; align-items: center; gap: .45rem; }
+.save-state::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.save-state.saving::before { background: var(--warn); animation: breathe 1s ease-in-out infinite; }
+.save-state.saved::before { background: var(--ok); }
+.save-state.error { color: var(--bad); }
+.save-state.error::before { background: var(--bad); }
+.stage.draft::before { background: var(--line); }

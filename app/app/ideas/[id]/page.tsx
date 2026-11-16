@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Icon from '@/components/icon';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireMe, supabaseServer } from '@/lib/supabase/server';
 import { StageLabel, StageTrack } from '@/components/stage';
 import ActionForm from '@/components/action-form';
@@ -29,6 +29,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
   const { data: ideaRow } = await sb.from('ideas').select('*').eq('id', id).maybeSingle();
   if (!ideaRow) notFound();
   const idea = ideaRow as Idea;
+  if (idea.stage === 'draft') redirect(`/app/ideas/new?draft=${id}`);
   const isOwner = idea.owner_id === me.id;
   const isPanel = me.role === 'admin' || me.role === 'adjudicator';
 
@@ -86,7 +87,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
   }
 
   const reached = (history ?? []).map((h) => h.to_stage as Stage);
-  const editable = isOwner && ['submitted', 'feedback'].includes(idea.stage);
+  const editable = isOwner && idea.stage === 'feedback';
   const canTalk = !['withdrawn', 'rejected', 'awarded'].includes(idea.stage);
 
   return (
@@ -281,7 +282,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
             </ol>
           </section>
 
-          {isOwner && !['approved', 'awarded', 'rejected', 'withdrawn'].includes(idea.stage) && (
+          {isOwner && !['draft', 'approved', 'awarded', 'rejected', 'withdrawn'].includes(idea.stage) && (
             <form action={withdrawIdea}>
               <input type="hidden" name="idea_id" value={id} />
               <button className="btn danger small">Withdraw {idea.ref}</button>

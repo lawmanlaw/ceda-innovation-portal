@@ -12,7 +12,7 @@ create table storage.objects (id uuid default gen_random_uuid(), bucket_id text,
 create function storage.foldername(n text) returns text[] language sql as $$ select string_to_array(n,'/') $$;
 grant usage on schema public, auth, storage to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -89,6 +89,16 @@ check('sql injection stored as plain text', await as('other', `select title from
 check('tables intact after injection', (await db.query(`select count(*)::int n from public.ideas`)).rows[0].n, n=>n>5);
 check('injected district rejected', await as('other', `select public.submit_idea('Valid title','A summary that is long enough to pass',1::smallint,$1,$2)`, ["Gaborone' or 1=1 --", answers]), r=>typeof r==='string');
 
+await db.exec(`update public.ideas set submitted_at = now() - interval '2 hours'`);
+const d = (await as('sub', `select public.save_draft(null,'Ha','',null,'',$1) id`, [{problem:'half typed'}]))[0]?.id;
+check('draft saves incomplete', d, r=>!!r);
+check('admin cannot see draft', await as('other', `select id from public.ideas where id=$1`,[d]), r=>Array.isArray(r) && r.length===0);
+check('draft not in reports', (await as('adj', `select public.report_overview() r`))[0].r.by_stage.draft, r=>r===undefined);
+check('incomplete draft cannot submit', await as('sub', `select * from public.submit_draft($1)`,[d]), r=>typeof r==='string' && r.includes('title'));
+await as('sub', `select public.save_draft($1,'Draft solar pump','A solar water pump for small gardens in Kweneng',1::smallint,'Kweneng',$2)`,[d, answers]);
+check('draft submits', await as('sub', `select stage, ref from public.submit_draft($1)`,[d]), r=>Array.isArray(r) && r[0].stage==='submitted' && r[0].ref.startsWith('CEDA-'));
+check('submitted idea is final', await as('sub', `select public.save_draft($1,'Changed','x',1::smallint,'Kweneng',$2)`,[d, answers]), r=>typeof r==='string' && r.includes('can no longer'));
+check('draft autosaves not audited', (await db.query(`select count(*)::int n from public.audit_log where record_id=$1 and new_data->>'stage'='draft'`,[d])).rows[0].n, n=>n===0);
 check('staff cannot self-delete', await as('ev', `select public.delete_my_account()`), r=>typeof r==='string' && r.includes('administrator'));
 check('innovator deletes account', await as('sub', `select public.delete_my_account()`), r=>Array.isArray(r));
 check('account and ideas gone', (await db.query(`select (select count(*) from auth.users where id=$1)::int u, (select count(*) from public.ideas where owner_id=$1)::int i`,[U.sub])).rows[0], r=>r.u===0 && r.i===0);

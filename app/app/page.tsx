@@ -15,13 +15,27 @@ export default async function Dashboard() {
 
   if (me.role === 'submitter') {
     const { data } = await sb.from('ideas').select('*').eq('owner_id', me.id).order('updated_at', { ascending: false });
-    const ideas = (data ?? []) as Idea[];
+    const all = (data ?? []) as Idea[];
+    const drafts = all.filter((i) => i.stage === 'draft');
+    const ideas = all.filter((i) => i.stage !== 'draft');
     return (
       <div className="stack">
         <div className="row between">
           <h1>Welcome{me.full_name ? `, ${me.full_name.split(' ')[0]}` : ''}</h1>
           <Link className="btn" href="/app/ideas/new">Submit an idea</Link>
         </div>
+        {drafts.length > 0 && (
+          <section className="card">
+            <h2>Drafts <span className="muted">({drafts.length})</span></h2>
+            <p className="muted">Only you can see these. Submit them when you are ready.</p>
+            {drafts.map((d) => (
+              <div key={d.id} className="row between" style={{ padding: '.5rem 0' }}>
+                <span>{d.title || 'Untitled idea'}<br /><small>Last saved {fmtDate(d.updated_at, true)}</small></span>
+                <Link className="btn secondary small" href={`/app/ideas/new?draft=${d.id}`}>Continue</Link>
+              </div>
+            ))}
+          </section>
+        )}
         {ideas.length > 0 && (() => {
           const forward = ideas.filter((i) => ['approved', 'awarded'].includes(i.stage)).length;
           const waiting = ideas.filter((i) => i.stage === 'feedback');
@@ -41,7 +55,7 @@ export default async function Dashboard() {
             </section>
           );
         })()}
-        {ideas.length === 0 && (
+        {ideas.length === 0 && drafts.length === 0 && (
           <div className="card">
             <img className="photo" src="/img/plane.webp" alt="" loading="lazy" style={{ aspectRatio: '21 / 9', marginBottom: '1rem' }} />
             <h2>No ideas yet</h2>
