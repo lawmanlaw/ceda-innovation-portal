@@ -7,7 +7,7 @@ type Mode = 'signin' | 'code' | 'signup' | 'verify' | 'forgot' | 'reset';
 
 const TITLES: Record<Mode, string> = {
   signin: 'Sign in',
-  code: 'Sign in with a code',
+  code: 'Sign in with an email link',
   signup: 'Create your account',
   verify: 'Check your email',
   forgot: 'Reset your password',
@@ -37,6 +37,7 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
 
   // Same wording whether or not the account exists, so the form can't be used to find out who is registered
   const sentCode = 'If that email is registered, we have sent a 6 digit code to it. It expires in 10 minutes.';
+  const sentLink = 'If that email is registered, we have sent you a sign-in link. Open it on this device. It expires in 1 hour.';
 
   async function oauth(provider: 'google') {
     setError(null);
@@ -66,10 +67,8 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
       }
       if (mode === 'code') {
         setEmail(v('email'));
-        await sb.auth.signInWithOtp({ email: v('email'), options: { shouldCreateUser: false } });
-        setVerifyType('email');
-        setMode('verify');
-        setInfo(sentCode);
+        await sb.auth.signInWithOtp({ email: v('email'), options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/auth/callback` } });
+        setInfo(sentLink);
         return;
       }
       if (mode === 'signup') {
@@ -80,13 +79,14 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
         const { error } = await sb.auth.signUp({
           email: v('email'),
           password,
-          options: { data: { full_name: v('full_name'), organisation: v('organisation'), district: v('district') } },
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: { full_name: v('full_name'), organisation: v('organisation'), district: v('district') },
+          },
         });
         if (error) throw new Error(error.message.includes('rate') ? 'Too many attempts. Please wait a minute.' : 'We could not create the account. Check your details and try again.');
         setEmail(v('email'));
-        setVerifyType('email');
-        setMode('verify');
-        setInfo('We have sent a 6 digit code to your email. Enter it below to confirm your address.');
+        setInfo('Almost done. We have sent you an email: open it and tap the link to confirm your address. You can close this page.');
         return;
       }
       if (mode === 'verify') {
@@ -97,10 +97,8 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
       }
       if (mode === 'forgot') {
         setEmail(v('email'));
-        await sb.auth.resetPasswordForEmail(v('email'));
-        setVerifyType('recovery');
-        setMode('verify');
-        setInfo(sentCode);
+        await sb.auth.resetPasswordForEmail(v('email'), { redirectTo: `${window.location.origin}/auth/callback?next=/reset-password` });
+        setInfo(sentLink);
         return;
       }
       if (mode === 'reset') {
@@ -176,14 +174,14 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
       )}
 
       <button className="btn" type="submit" aria-busy={busy} disabled={busy} style={{ width: '100%' }}>
-        {{ signin: 'Sign in', code: 'Email me a code', signup: 'Create account', verify: 'Confirm', forgot: 'Email me a code', reset: 'Save password' }[mode]}
+        {{ signin: 'Sign in', code: 'Email me a sign-in link', signup: 'Create account', verify: 'Confirm', forgot: 'Email me a reset link', reset: 'Save password' }[mode]}
       </button>
 
       <div className="stack" style={{ fontSize: '.95rem' }}>
         {mode === 'signin' && (
           <>
             <div className="row between">
-              <button type="button" className="btn ghost small" onClick={() => go('code')}>Use a code instead</button>
+              <button type="button" className="btn ghost small" onClick={() => go('code')}>Email me a link instead</button>
               <button type="button" className="btn ghost small" onClick={() => go('forgot')}>Forgot password?</button>
             </div>
             <p>New here? <button type="button" className="btn ghost small" onClick={() => go('signup')}>Create an account</button></p>
