@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Bokamoso, { type BkMode } from '@/components/bokamoso';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { emailLinkClient } from '@/lib/supabase/email-links';
@@ -31,6 +32,20 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
   const [pw2, setPw2] = useState('');
   const [pw2Touched, setPw2Touched] = useState(false);
   const mismatch = mode === 'signup' && pw2.length > 0 && (pw2Touched || pw2.length >= pw.length) && pw !== pw2;
+
+  // Bokamoso watches text being typed, covers his eyes on password boxes and reacts to errors
+  const [focus, setFocus] = useState('');
+  const [look, setLook] = useState(0);
+  const isPw = focus.startsWith('password');
+  const bk: BkMode = mismatch ? 'peek' : isPw ? 'hide' : error ? 'no' : focus ? 'watch' : 'idle';
+  const say = mismatch ? 'Those two passwords do not match yet.' : isPw ? "I'm not looking. Type away."
+    : error ? 'Hmm, that did not work. Have another go.'
+    : mode === 'signup' ? "Hi, I'm Bokamoso. Let's get you set up." : mode === 'signin' ? "Hi, I'm Bokamoso. Welcome back." : "I'll help you get back in.";
+  const track = (t: EventTarget) => {
+    const el = t as HTMLInputElement;
+    if (el.tagName === 'INPUT' && el.type !== 'password' && el.type !== 'checkbox') setLook(Math.min(1, el.value.length / 26) * 2 - 1);
+  };
+  useEffect(() => { if (error) (document.activeElement as HTMLElement | null)?.blur(); }, [error]);
 
   const go = (m: Mode) => {
     setError(null);
@@ -134,6 +149,7 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
   if (success) {
     return (
       <div className="success" role="status">
+        <Bokamoso mode="yes" size={120} />
         <Icon name="check" className="tick" />
         <strong>You are signed in</strong>
         <span className="muted">Taking you to your dashboard</span>
@@ -142,8 +158,11 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
   }
 
   return (
-    <form onSubmit={submit} className={`stack${mode === 'signup' ? ' signup' : ''}`} noValidate={false}>
+    <form onSubmit={submit} className={`stack${mode === 'signup' ? ' signup' : ''}`} noValidate={false}
+      onFocusCapture={(e) => { const t = e.target as HTMLElement; setFocus(['INPUT', 'SELECT'].includes(t.tagName) ? t.id : ''); track(t); }}
+      onBlurCapture={() => setFocus('')} onInputCapture={(e) => track(e.target)}>
       <h1 style={{ fontSize: '1.5rem' }}>{TITLES[mode]}</h1>
+      <div className="bk-auth"><Bokamoso mode={bk} look={look} size={76} /><p aria-live="polite">{say}</p></div>
       {info && <p className="notice" role="status">{info}</p>}
       {(mode === 'signin' || mode === 'signup') && (
         <>

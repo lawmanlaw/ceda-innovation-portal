@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import Uploader from '@/components/uploader';
+import Bokamoso from '@/components/bokamoso';
 import { friendlyError } from '@/lib/util';
 import type { FormField, Idea } from '@/lib/types';
 
@@ -193,8 +194,13 @@ export default function DraftForm({ fields, categories, districts, draft, files,
 
       {confirm ? (
         <section className="checklist" aria-labelledby="checklist-title">
-          <h2 id="checklist-title">Before you send</h2>
-          <p className="muted">Let's check everything together. Once submitted, your idea is final unless the panel returns it for changes.</p>
+          <div className="bk-auth">
+            <Bokamoso mode={ready ? 'yes' : 'watch'} size={76} />
+            <div>
+              <h2 id="checklist-title">Before you send</h2>
+              <p>{ready ? 'Everything is in place. You are ready to submit.' : "Let's check everything together. Once submitted, your idea is final unless the panel returns it for changes."}</p>
+            </div>
+          </div>
           <ul>
             {checks.map((c) => (
               <li key={c.label} className={c.ok ? 'ok' : c.required ? 'todo' : 'warn'}>
