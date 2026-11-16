@@ -23,6 +23,7 @@ export default async function Dashboard() {
         </div>
         {ideas.length === 0 && (
           <div className="card">
+            <img className="photo" src="/img/plane.webp" alt="" loading="lazy" style={{ aspectRatio: '21 / 9', marginBottom: '1rem' }} />
             <h2>No ideas yet</h2>
             <p className="muted">Submitting takes about 10 minutes. You can save your thinking in a document first and paste it in.</p>
             <Link className="btn" href="/app/ideas/new">Start your first idea</Link>

@@ -11,8 +11,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const sb = await supabaseServer();
   const { data: districts } = await sb.from('districts').select('name').order('name');
   return (
-    <main id="main">
-      <div className="wrap" style={{ maxWidth: 440 }}>
+    <main id="main" className="auth">
+      <div className="auth-photo"><img src="/img/whiteboard.webp" alt="" /></div>
+      <div className="auth-form">
         <p><Link href="/" className="brand"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /><span>Innovation Portal</span></Link></p>
         <div className="card">
           {error === 'oauth' && <p className="notice bad">That link did not work or has expired. Please try again.</p>}
