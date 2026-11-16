@@ -17,9 +17,10 @@ export default async function Home() {
       </header>
       <main id="main">
         <div className="wrap stack">
-          <section style={{ maxWidth: 680, padding: '2rem 0 1rem' }}>
+          <section className="hero">
+            <div>
             <h1>Bring your idea to CEDA</h1>
-            <p style={{ fontSize: '1.15rem', color: 'var(--ink-2)' }}>
+            <p>
               Submit an idea that could grow a business, create jobs or improve how CEDA works. Follow every step of its
               review, talk to the panel, and get recognised when it is taken forward.
             </p>
@@ -27,6 +28,8 @@ export default async function Home() {
               <Link className="btn" href={me ? '/app/ideas/new' : '/login?mode=signup'}>Submit an idea</Link>
               <Link className="btn secondary" href="/help">How it works</Link>
             </div>
+            </div>
+            <div className="rings" aria-hidden><span /><span /><span /><span /></div>
           </section>
 
           <section className="card">

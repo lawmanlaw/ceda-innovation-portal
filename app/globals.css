@@ -148,3 +148,71 @@ main { padding: 1.75rem 0 4rem; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Motion: tokens from the motion skill. Only transform and opacity animate; ease-out on enter. */
+:root {
+  --motion-100: 100ms;
+  --motion-150: 150ms;
+  --motion-200: 200ms;
+  --motion-300: 300ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+@keyframes enter-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes enter-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fill-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Page content settles in on every navigation; children follow one after another */
+main > .wrap > *, main > .wrap > .stack > * { animation: enter-up var(--motion-300) var(--ease-out) both; }
+main > .wrap > .stack > *:nth-child(2) { animation-delay: 40ms; }
+main > .wrap > .stack > *:nth-child(3) { animation-delay: 80ms; }
+main > .wrap > .stack > *:nth-child(4) { animation-delay: 120ms; }
+main > .wrap > .stack > *:nth-child(n+5) { animation-delay: 160ms; }
+
+/* Progress and chart bars fill from the left */
+.track div.done, .bar { transform-origin: left center; animation: fill-x var(--motion-300) var(--ease-out) both; }
+.track div.done:nth-child(2) { animation-delay: 60ms; }
+.track div.done:nth-child(3) { animation-delay: 120ms; }
+.track div.done:nth-child(4) { animation-delay: 180ms; }
+.track div.done:nth-child(5) { animation-delay: 240ms; }
+
+/* Menus (alerts, account) open with a short fade and lift */
+details[open] > .card { animation: enter-up var(--motion-150) var(--ease-out) both; }
+details > summary::-webkit-details-marker { display: none; }
+
+/* Messages and notices arrive gently */
+.bubble, .notice, [role='status'], [role='alert'] { animation: enter-fade var(--motion-200) var(--ease-out) both; }
+.bubble.mine { animation-name: enter-up; }
+
+/* Interactive cards lift slightly on hover */
+a.card { transition: transform var(--motion-150) var(--ease-out), opacity var(--motion-150) var(--ease-out); }
+a.card:hover { transform: translateY(-2px); }
+a.card:active { transform: translateY(0); }
+.btn { transition: transform var(--motion-100) var(--ease-out), opacity var(--motion-150) var(--ease-out); }
+.btn:hover { opacity: .92; }
+.nav a { transition: opacity var(--motion-150) var(--ease-out); }
+.nav a:hover { opacity: .75; }
+
+/* Refresh: calmer surfaces, clearer rhythm */
+.card { border-radius: 12px; box-shadow: 0 1px 2px rgb(63 44 36 / .05), 0 8px 24px rgb(63 44 36 / .04); }
+.topbar { background: rgb(255 255 255 / .9); backdrop-filter: saturate(1.4) blur(10px); }
+main { padding: 2rem 0 4rem; }
+.stat strong { color: var(--brand); }
+th { font-size: .85rem; letter-spacing: .01em; }
+
+/* Landing hero with the CEDA circle motif */
+.hero { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2rem; align-items: center; padding: 2.5rem 0 1.5rem; }
+.hero h1 { font-size: clamp(2rem, 4.5vw, 3.1rem); line-height: 1.08; }
+.hero p { font-size: 1.15rem; color: var(--ink-2); max-width: 34rem; }
+.rings { position: relative; aspect-ratio: 1; max-width: 380px; justify-self: center; width: 100%; }
+.rings span { position: absolute; border-radius: 50%; animation: enter-fade var(--motion-300) var(--ease-out) both; }
+.rings span:nth-child(1) { inset: 0 18% 18% 0; background: #ede4ee; }
+.rings span:nth-child(2) { inset: 22% 0 0 26%; background: var(--accent); opacity: .9; animation-delay: 80ms; }
+.rings span:nth-child(3) { inset: 38% 34% 14% 10%; background: var(--gold); opacity: .85; animation-delay: 160ms; }
+.rings span:nth-child(4) { inset: 12% 30% 46% 30%; background: var(--brand); animation-delay: 240ms; }
+@media (max-width: 720px) { .hero { grid-template-columns: 1fr; } .rings { max-width: 220px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
+}
