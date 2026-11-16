@@ -12,7 +12,7 @@ create table storage.objects (id uuid default gen_random_uuid(), bucket_id text,
 create function storage.foldername(n text) returns text[] language sql as $$ select string_to_array(n,'/') $$;
 grant usage on schema public, auth, storage to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -40,8 +40,10 @@ check('review needs evaluator', await as('adj', `select public.move_idea($1,'in_
 check('assign', await as('adj', `select public.assign_evaluator($1,$2)`,[idea.id,U.ev]), r=>Array.isArray(r));
 check('start review', await as('adj', `select public.move_idea($1,'in_review',null)`,[idea.id]), r=>Array.isArray(r));
 check('evaluator sees now', await as('ev', `select id from public.ideas`), r=>r.length===1);
-const crit = (await db.query(`select id from public.criteria order by sort`)).rows;
-const sc = Object.fromEntries(crit.map((c,i)=>[c.id,{score:6+i%3,comment:'ok'}]));
+const crit = (await db.query(`select id from public.criteria where active order by sort`)).rows;
+const sc = Object.fromEntries(crit.map((c,i)=>[c.id,{score:3+i%3,comment:'ok'}]));
+check('six CEDA categories, 1 to 5', crit.length, n=>n===6);
+check('score of 0 rejected', await as('ev', `select public.save_scores($1,$2,false)`,[idea.id,{[crit[0].id]:{score:0}}]), r=>typeof r==='string' && r.includes('between 1 and 5'));
 check('out of range score rejected', await as('ev', `select public.save_scores($1,$2,true)`,[idea.id,{[crit[0].id]:{score:11}}]), r=>typeof r==='string');
 check('final scores', await as('ev', `select public.save_scores($1,$2,true)`,[idea.id,sc]), r=>Array.isArray(r));
 check('locked after final', await as('ev', `select public.save_scores($1,$2,false)`,[idea.id,sc]), r=>typeof r==='string');
@@ -94,9 +96,12 @@ const d = (await as('sub', `select public.save_draft(null,'Ha','',null,'',$1) id
 check('draft saves incomplete', d, r=>!!r);
 check('admin cannot see draft', await as('other', `select id from public.ideas where id=$1`,[d]), r=>Array.isArray(r) && r.length===0);
 check('draft not in reports', (await as('adj', `select public.report_overview() r`))[0].r.by_stage.draft, r=>r===undefined);
-check('incomplete draft cannot submit', await as('sub', `select * from public.submit_draft($1)`,[d]), r=>typeof r==='string' && r.includes('title'));
+check('incomplete draft cannot submit', await as('sub', `select * from public.submit_draft($1,true)`,[d]), r=>typeof r==='string' && r.includes('title'));
 await as('sub', `select public.save_draft($1,'Draft solar pump','A solar water pump for small gardens in Kweneng',1::smallint,'Kweneng',$2)`,[d, answers]);
-check('draft submits', await as('sub', `select stage, ref from public.submit_draft($1)`,[d]), r=>Array.isArray(r) && r[0].stage==='submitted' && r[0].ref.startsWith('CEDA-'));
+check('submit needs IP confirmation', await as('sub', `select * from public.submit_draft($1,false)`,[d]), r=>typeof r==='string' && r.includes('IP'));
+check('draft submits', await as('sub', `select stage, ref, ip_confirmed_at from public.submit_draft($1,true)`,[d]), r=>Array.isArray(r) && r[0].stage==='submitted' && r[0].ref.startsWith('CEDA-') && !!r[0].ip_confirmed_at);
+check('only owner logs blocked upload', await as('other', `select public.log_blocked_upload($1,'x.pdf','test')`,[d]), r=>typeof r==='string');
+check('blocked upload audited', await as('sub', `select public.log_blocked_upload($1,'x.pdf','PDF script')`,[d]), r=>Array.isArray(r));
 check('submitted idea is final', await as('sub', `select public.save_draft($1,'Changed','x',1::smallint,'Kweneng',$2)`,[d, answers]), r=>typeof r==='string' && r.includes('can no longer'));
 check('draft autosaves not audited', (await db.query(`select count(*)::int n from public.audit_log where record_id=$1 and new_data->>'stage'='draft'`,[d])).rows[0].n, n=>n===0);
 check('staff cannot self-delete', await as('ev', `select public.delete_my_account()`), r=>typeof r==='string' && r.includes('administrator'));

@@ -440,3 +440,43 @@ li:hover > .icon, .card:hover > .icon { transform: translateY(-2px); }
 .save-state.error { color: var(--bad); }
 .save-state.error::before { background: var(--bad); }
 .stage.draft::before { background: var(--line); }
+
+/* Evaluation form: CEDA's 1 (Poor) to 5 (Excellent) scale */
+.score-row { border: 0; padding: 0 0 1rem; margin: 0 0 1rem; border-bottom: 1px solid var(--line); }
+.score-row legend { font-weight: 600; color: var(--ink); padding: 0; }
+.score-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4rem; margin: .5rem 0; }
+.score-pick { position: relative; display: flex; flex-direction: column; align-items: center; gap: .1rem; padding: .5rem .25rem; border-radius: var(--radius); background: var(--bg); cursor: pointer; font-weight: 400; transition: background var(--motion-150) var(--ease-out); }
+.score-pick input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.score-pick span { font-size: 1.15rem; font-weight: 600; color: var(--ink-2); }
+.score-pick small { font-size: .72rem; text-align: center; }
+.score-pick:has(input:checked) { background: var(--brand); }
+.score-pick:has(input:checked) span, .score-pick:has(input:checked) small { color: #fff; }
+.score-pick:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Compact sign-up */
+.auth-form:has(form.signup) { width: min(580px, 100% - 2rem); }
+form.signup { gap: .75rem; }
+form.signup h1 { margin-bottom: 0; }
+.grid.cols-2.tight { grid-template-columns: 1fr 1fr; gap: .25rem 1rem; }
+.grid.tight .field { margin: 0; }
+.field-note { display: block; min-height: 1.2em; font-size: .8rem; color: var(--ink-3); margin-top: .2rem; }
+.field-note.ok { color: var(--ok); }
+.field-note.bad { color: var(--bad); font-weight: 600; }
+input[aria-invalid="true"] { border-color: var(--bad); }
+.consent { flex-wrap: nowrap; font-weight: 400; align-items: flex-start; font-size: .88rem; gap: .5rem; }
+.consent input { margin-top: .2rem; }
+.or-line { display: flex; align-items: center; gap: .75rem; margin: 0; color: var(--ink-3); font-size: .85rem; }
+.or-line::before, .or-line::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+@media (max-width: 520px) { .grid.cols-2.tight { grid-template-columns: 1fr; } }
+
+/* Pre-submit checklist */
+.checklist { background: var(--brand-soft); border-radius: var(--radius); padding: 1rem 1.1rem; animation: enter-up var(--motion-200) var(--ease-out) both; }
+.checklist h2 { font-size: 1.1rem; margin: 0 0 .25rem; }
+.checklist ul { list-style: none; padding: 0; margin: .75rem 0; display: grid; gap: .35rem; }
+.checklist li { display: flex; align-items: center; gap: .6rem; min-height: 34px; }
+.checklist li > span:nth-child(2) { flex: 1; }
+.checklist .mark { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .75rem; font-weight: 700; color: #fff; flex: none; }
+.checklist .ok .mark { background: var(--ok); }
+.checklist .todo .mark { background: var(--bad); }
+.checklist .warn .mark { background: var(--warn); }
+.checklist .consent { margin: .35rem 0; }

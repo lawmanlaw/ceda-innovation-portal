@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { requireMe, supabaseServer } from '@/lib/supabase/server';
 import { friendlyError } from '@/lib/util';
+import { scanFile } from '@/lib/file-scan';
 
 export type ActionState = { error?: string | null; ok?: string | null };
 
@@ -26,22 +27,6 @@ function readIdea(f: FormData) {
   const answers: Record<string, string> = {};
   for (const [k, v] of f.entries()) if (k.startsWith('a_') && typeof v === 'string') answers[k.slice(2)] = v.slice(0, 5000);
   return { base, answers };
-}
-
-export async function submitIdea(_: ActionState, f: FormData): Promise<ActionState> {
-  await requireMe();
-  const { base, answers } = readIdea(f);
-  if (!base.success) return { error: base.error.issues[0].message };
-  const sb = await supabaseServer();
-  const { data, error } = await sb.rpc('submit_idea', {
-    p_title: base.data.title,
-    p_summary: base.data.summary,
-    p_category: base.data.category,
-    p_district: base.data.district,
-    p_answers: answers,
-  });
-  if (error) return { error: friendlyError(error) };
-  redirect(`/app/ideas/${(data as { id: string }).id}?new=1`);
 }
 
 export async function resubmitIdea(_: ActionState, f: FormData): Promise<ActionState> {
@@ -140,18 +125,28 @@ export async function postFeedback(_: ActionState, f: FormData): Promise<ActionS
   return { ok: 'Posted.' };
 }
 
-export async function recordAttachment(ideaId: string, path: string, name: string, size: number): Promise<ActionState> {
+export async function recordAttachment(ideaId: string, path: string, name: string): Promise<ActionState> {
   const me = await requireMe('submitter');
   const id = uuid.safeParse(ideaId);
-  if (!id.success || !path.startsWith(`${id.data}/`) || size > 10485760) return { error: 'Upload failed.' };
+  if (!id.success || !path.startsWith(`${id.data}/`) || path.includes('..')) return { error: 'Upload failed.' };
   const sb = await supabaseServer();
-  const { error } = await sb.from('attachments').insert({ idea_id: id.data, storage_path: path, file_name: name.slice(0, 200), size_bytes: size, uploaded_by: me.id });
+  // Read back what actually landed in storage and check its real contents before anyone can see it
+  const { data: blob, error: readErr } = await sb.storage.from('idea-files').download(path);
+  if (readErr || !blob) return { error: 'Upload failed. Please try again.' };
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const verdict = scanFile(name, bytes);
+  if (!verdict.ok) {
+    await sb.storage.from('idea-files').remove([path]);
+    await sb.rpc('log_blocked_upload', { p_idea: id.data, p_file: name.slice(0, 200), p_reason: verdict.reason });
+    return { error: verdict.reason };
+  }
+  const { error } = await sb.from('attachments').insert({ idea_id: id.data, storage_path: path, file_name: name.slice(0, 200), size_bytes: bytes.byteLength, uploaded_by: me.id });
   if (error) {
     await sb.storage.from('idea-files').remove([path]);
     return { error: friendlyError(error) };
   }
   revalidatePath(`/app/ideas/${id.data}`);
-  return { ok: 'Uploaded.' };
+  return { ok: 'Uploaded and checked.' };
 }
 
 export async function removeAttachment(f: FormData) {
