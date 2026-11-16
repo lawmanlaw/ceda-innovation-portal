@@ -115,8 +115,7 @@ tr.link:hover td { background: var(--brand-soft); }
 .topbar { background: var(--surface); box-shadow: 0 1px 0 var(--line); position: sticky; top: 0; z-index: 20; }
 .topbar .wrap { display: flex; align-items: center; gap: 1rem; min-height: 60px; }
 .brand { display: inline-flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--ink); text-decoration: none; margin-right: auto; }
-.brand img { height: 40px; width: auto; }
-.brand span { padding-left: .75rem; box-shadow: -1px 0 0 var(--line); }
+.brand img { height: 40px; width: auto; display: block; }
 .nav { display: flex; gap: .25rem; flex-wrap: wrap; }
 .nav a { color: var(--ink-2); text-decoration: none; padding: .45rem .7rem; border-radius: 6px; font-weight: 500; }
 .nav a[aria-current='page'] { color: var(--brand); background: var(--brand-soft); }
@@ -226,19 +225,20 @@ th { font-size: .85rem; letter-spacing: .01em; }
 .loader-track span { display: block; width: 40%; height: 100%; background: var(--accent); animation: slide 1.1s var(--ease-out) infinite; }
 
 /* Logo settles in once when the site opens */
-/* Brand entrance: the logo settles in, the divider draws down, then the title slides in beside it */
-.brand { position: relative; }
-.brand img { transform-origin: left center; animation: brand-logo var(--motion-300) var(--ease-out) both, brand-logo-loop 8s ease-in-out 3s infinite; transition: transform var(--motion-200) var(--ease-out); }
-.brand span { box-shadow: none; position: relative; animation: brand-title var(--motion-300) var(--ease-out) 350ms both, brand-title-loop 8s ease-in-out 3s infinite; }
-.brand span::before { content: ''; position: absolute; left: 0; top: 10%; bottom: 10%; width: 1px; background: var(--line); transform-origin: top; animation: brand-rule var(--motion-300) var(--ease-out) 250ms both, brand-rule-loop 8s ease-in-out 3s infinite; }
-.brand:hover img { transform: translateY(-1px) scale(1.03); }
-@keyframes brand-logo { from { opacity: 0; transform: translateX(-10px) scale(.92); } to { opacity: 1; transform: none; } }
+/* Brand: the logo slides out of the divider to the left and the title to the right, then replays every 10 seconds */
+.brand { gap: 0; }
+.brand-mark, .brand-name { overflow: hidden; display: block; }
+.brand-mark { padding-right: .8rem; }
+.brand-name { padding-left: .8rem; }
+.brand-name > span { display: block; }
+.brand-rule { width: 1px; height: 30px; background: var(--line); transform-origin: center; animation: brand-rule 400ms var(--ease-out) both; }
+.brand-mark img { animation: brand-logo-in 900ms var(--ease-out) 300ms both, brand-logo-loop 10s ease-in-out 6s infinite; }
+.brand-name > span { animation: brand-name-in 900ms var(--ease-out) 300ms both, brand-name-loop 10s ease-in-out 6s infinite; }
 @keyframes brand-rule { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-/* Every 8 seconds the brand replays a short version of its entrance, then rests */
-@keyframes brand-logo-loop { 0%, 9%, 100% { transform: none; } 3% { transform: translateY(-2px) scale(1.04); } }
-@keyframes brand-rule-loop { 0%, 8%, 100% { transform: scaleY(1); } 3% { transform: scaleY(0); } }
-@keyframes brand-title-loop { 0%, 10%, 100% { opacity: 1; transform: none; } 4% { opacity: .55; transform: translateX(-6px); } }
-@keyframes brand-title { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+@keyframes brand-logo-in { from { transform: translateX(calc(100% + .8rem)); } to { transform: none; } }
+@keyframes brand-name-in { from { transform: translateX(calc(-100% - .8rem)); } to { transform: none; } }
+@keyframes brand-logo-loop { 0%, 100% { transform: none; } 8%, 10% { transform: translateX(calc(100% + .8rem)); } 18% { transform: none; } }
+@keyframes brand-name-loop { 0%, 100% { transform: none; } 8%, 10% { transform: translateX(calc(-100% - .8rem)); } 18% { transform: none; } }
 
 /* Cross-page fade on full page loads, where the browser supports it */
 @view-transition { navigation: auto; }
