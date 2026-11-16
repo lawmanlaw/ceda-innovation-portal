@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase/server';
+import FaqSearch from './faq-search';
 
 export const metadata = { title: 'Help' };
 export const revalidate = 300;
@@ -13,7 +14,6 @@ export default async function Help() {
     sb.from('documents').select('id, title, description, storage_path').eq('published', true).order('created_at'),
   ]);
   const page = (slug: string) => pages?.find((p) => p.slug === slug);
-  const topics = [...new Set((faqs ?? []).map((f) => f.topic))];
   const publicUrl = (path: string) => sb.storage.from('documents').getPublicUrl(path).data.publicUrl;
 
   return (
@@ -26,20 +26,10 @@ export default async function Help() {
       </header>
       <main id="main">
         <div className="wrap stack" style={{ maxWidth: 820 }}>
-          <h1>Help</h1>
+          <h1>How can we help you today?</h1>
           {page('about') && <p className="muted">{page('about')!.body}</p>}
 
-          {topics.map((t) => (
-            <section key={t} className="card">
-              <h2>{t}</h2>
-              {faqs!.filter((f) => f.topic === t).map((f) => (
-                <details key={f.id} style={{ padding: '.5rem 0' }}>
-                  <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{f.question}</summary>
-                  <p style={{ marginTop: '.5rem' }}>{f.answer}</p>
-                </details>
-              ))}
-            </section>
-          ))}
+          <FaqSearch faqs={faqs ?? []} />
 
           {!!docs?.length && (
             <section className="card">

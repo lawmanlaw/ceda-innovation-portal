@@ -22,6 +22,25 @@ export default async function Dashboard() {
           <h1>Welcome{me.full_name ? `, ${me.full_name.split(' ')[0]}` : ''}</h1>
           <Link className="btn" href="/app/ideas/new">Submit an idea</Link>
         </div>
+        {ideas.length > 0 && (() => {
+          const forward = ideas.filter((i) => ['approved', 'awarded'].includes(i.stage)).length;
+          const waiting = ideas.filter((i) => i.stage === 'feedback');
+          const pct = Math.round((forward / ideas.length) * 100);
+          return (
+            <section className="summary">
+              <div>
+                <strong>{waiting.length ? `${waiting.length} idea${waiting.length > 1 ? 's need' : ' needs'} your reply` : 'Nothing needs your action right now'}</strong>
+                <span>{forward} of {ideas.length} ideas taken forward</span>
+                {waiting[0] && <Link className="btn light small" href={`/app/ideas/${waiting[0].id}`}>Open it</Link>}
+              </div>
+              <svg className="ring" viewBox="0 0 64 64" role="img" aria-label={`${pct}% taken forward`}>
+                <circle cx="32" cy="32" r="26" />
+                <circle cx="32" cy="32" r="26" pathLength={100} style={{ strokeDasharray: `${pct} 100` }} />
+                <text x="32" y="37" textAnchor="middle">{pct}%</text>
+              </svg>
+            </section>
+          );
+        })()}
         {ideas.length === 0 && (
           <div className="card">
             <img className="photo" src="/img/plane.webp" alt="" loading="lazy" style={{ aspectRatio: '21 / 9', marginBottom: '1rem' }} />

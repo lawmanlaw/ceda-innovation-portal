@@ -3,6 +3,7 @@ import { requireMe } from '@/lib/supabase/server';
 import { ROLE_LABEL, type Role } from '@/lib/types';
 import NavLinks from '@/components/nav-links';
 import Notifications from '@/components/notifications';
+import Dock from '@/components/dock';
 
 const NAV: Record<Role, [string, string][]> = {
   submitter: [['/app', 'My ideas'], ['/app/ideas/new', 'Submit an idea'], ['/app/chat', 'Chat with CEDA']],
@@ -36,9 +37,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </details>
         </div>
       </header>
-      <main id="main">
+      <main id="main" className="has-dock">
         <div className="wrap">{children}</div>
       </main>
+      <Dock role={me.role} />
     </>
   );
 }

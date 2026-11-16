@@ -48,7 +48,7 @@ export default function ChatPane({ threadId, me, closed, onClose }: { threadId: 
 
   return (
     <div className="stack">
-      <div className="stack" style={{ maxHeight: 420, overflowY: 'auto', padding: '.25rem' }} aria-live="polite">
+      <div className="stack chat-scroll" aria-live="polite">
         {msgs.map((m) => (
           <div key={m.id} className={`bubble ${m.system ? 'system' : m.sender_id === me ? 'mine' : ''}`}>
             <div style={{ whiteSpace: 'pre-wrap' }}>{m.body}</div>
