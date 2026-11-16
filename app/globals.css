@@ -362,3 +362,19 @@ li:hover > .icon, .card:hover > .icon { transform: translateY(-2px); }
   .chat-fab.is-open { display: none; }
   .chat-x { width: 44px; height: 44px; }
 }
+
+/* Regulatory contacts */
+.authorities { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.authority { background: var(--surface); border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 2px rgb(63 44 36 / .05), 0 8px 24px rgb(63 44 36 / .04); display: flex; flex-direction: column; gap: .4rem; animation: enter-up var(--motion-300) var(--ease-out) both; transition: transform var(--motion-200) var(--ease-out); }
+.authority:nth-child(2) { animation-delay: 60ms; }
+.authority:nth-child(3) { animation-delay: 120ms; }
+.authority:nth-child(4) { animation-delay: 180ms; }
+.authority:nth-child(n+5) { animation-delay: 240ms; }
+.authority:hover { transform: translateY(-3px); }
+.authority-logo { height: 72px; display: flex; align-items: center; margin-bottom: .4rem; }
+.authority-logo img { max-height: 64px; max-width: 170px; object-fit: contain; transition: transform var(--motion-300) var(--ease-out); }
+.authority:hover .authority-logo img { transform: scale(1.06); }
+.authority-logo span { width: 64px; height: 64px; border-radius: 50%; display: grid; place-content: center; background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+.authority h3 { font-size: 1rem; margin: 0; }
+.authority p { margin: 0; font-size: .92rem; }
+.authority-links { margin-top: auto; padding-top: .5rem; display: grid; gap: .2rem; font-size: .92rem; }

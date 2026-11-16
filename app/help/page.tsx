@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase/server';
 import FaqSearch from './faq-search';
+import { initials, logoFor } from './authority-logo';
 
 export const metadata = { title: 'Help' };
 export const revalidate = 300;
@@ -45,25 +46,27 @@ export default async function Help() {
             </section>
           )}
 
-          <section className="card">
+          <section>
             <h2>Regulatory contacts</h2>
-            <div className="table-scroll">
-              <table>
-                <thead><tr><th>Authority</th><th>Handles</th><th>Contact</th></tr></thead>
-                <tbody>
-                  {authorities?.map((a) => (
-                    <tr key={a.id}>
-                      <td>{a.name}</td>
-                      <td>{a.remit}</td>
-                      <td>
-                        {a.website && <a href={a.website} rel="noopener noreferrer" target="_blank">Website</a>}
-                        {a.phone && <div>{a.phone}</div>}
-                        {a.email && <div><a href={`mailto:${a.email}`}>{a.email}</a></div>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <p className="muted">The authorities you may need while turning your idea into a business.</p>
+            <div className="authorities">
+              {authorities?.map((a) => {
+                const logo = logoFor(a.name);
+                return (
+                  <article key={a.id} className="authority">
+                    <div className="authority-logo">
+                      {logo ? <img src={logo} alt={`${a.name} logo`} loading="lazy" decoding="async" /> : <span aria-hidden="true">{initials(a.name)}</span>}
+                    </div>
+                    <h3>{a.name}</h3>
+                    {a.remit && <p className="muted">{a.remit}</p>}
+                    <div className="authority-links">
+                      {a.website && <a href={a.website} rel="noopener noreferrer" target="_blank">Visit website</a>}
+                      {a.phone && <a href={`tel:${a.phone.replace(/[^0-9+]/g, '')}`}>{a.phone}</a>}
+                      {a.email && <a href={`mailto:${a.email}`}>{a.email}</a>}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
 
