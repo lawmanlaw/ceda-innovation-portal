@@ -184,7 +184,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
                 <p style={{ whiteSpace: 'pre-wrap', margin: '.25rem 0 0' }}>{f.body}</p>
               </div>
             ))}
-            {canTalk && (
+            {canTalk && me.role !== 'observer' && (
               <ActionForm action={postFeedback} submit={isOwner ? 'Send reply' : 'Post'} reset className="stack" extra={
                 !isOwner && me.role !== 'submitter' ? (
                   <label className="row" style={{ fontWeight: 400, margin: 0 }}>

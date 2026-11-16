@@ -10,6 +10,7 @@ export const metadata = { title: 'Dashboard' };
 export default async function Dashboard() {
   const me = await requireMe();
   if (me.role === 'agent') redirect('/app/agent');
+  if (me.role === 'observer') redirect('/app/ideas');
   const sb = await supabaseServer();
 
   if (me.role === 'submitter') {
