@@ -16,7 +16,7 @@ export default async function AllIdeas({ searchParams }: { searchParams: Promise
   if (sp.district) query = query.eq('district', sp.district.slice(0, 60));
   if (sp.q) query = query.ilike('title', `%${sp.q.slice(0, 80).replace(/[%_\\]/g, '')}%`);
   // Map counts follow the stage and search filters but not the district one, so every district stays comparable
-  let mapQuery = sb.from('ideas').select('district, stage').limit(5000);
+  let mapQuery = sb.from('ideas').select('id, title, district, stage, lat, lng').neq('stage', 'draft').limit(5000);
   if (sp.stage && sp.stage in STAGE_LABEL) mapQuery = mapQuery.eq('stage', sp.stage);
   if (sp.q) mapQuery = mapQuery.ilike('title', `%${sp.q.slice(0, 80).replace(/[%_\\]/g, '')}%`);
   const [{ data: ideas }, { data: districts }, { data: mapRows }] = await Promise.all([query, sb.from('districts').select('name').order('name'), mapQuery]);
@@ -42,7 +42,7 @@ export default async function AllIdeas({ searchParams }: { searchParams: Promise
         </select>
         <button className="btn secondary">Filter</button>
       </form>
-      <DistrictMap stats={stats} selected={sp.district} />
+      <DistrictMap stats={stats} selected={sp.district} pins={(mapRows ?? []).filter((r) => r.lat != null).map((r) => ({ id: r.id, title: r.title, lat: r.lat as number, lng: r.lng as number }))} />
       <div className="card table-scroll">
         <table>
           <thead><tr><th>Idea</th><th>District</th><th>Stage</th><th>Submitted</th><th>Last change</th></tr></thead>
