@@ -1,5 +1,5 @@
 export type Role = 'submitter' | 'evaluator' | 'adjudicator' | 'admin' | 'agent' | 'observer';
-export type Stage = 'submitted' | 'in_review' | 'feedback' | 'approved' | 'awarded' | 'rejected' | 'withdrawn';
+export type Stage = 'draft' | 'submitted' | 'in_review' | 'feedback' | 'approved' | 'awarded' | 'rejected' | 'withdrawn';
 
 export const STAGES: { key: Stage; label: string }[] = [
   { key: 'submitted', label: 'Submitted' },
@@ -10,6 +10,7 @@ export const STAGES: { key: Stage; label: string }[] = [
 ];
 
 export const STAGE_LABEL: Record<Stage, string> = {
+  draft: 'Draft',
   submitted: 'Submitted',
   in_review: 'In review',
   feedback: 'Needs changes',
