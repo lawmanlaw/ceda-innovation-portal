@@ -7,9 +7,10 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: { default: 'CEDA Innovation Portal', template: '%s · CEDA Innovation Portal' },
   description: 'Submit ideas to CEDA, follow their evaluation and get recognised.',
+  applicationName: 'CEDA Innovation Portal',
 };
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#7a1e1e' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
