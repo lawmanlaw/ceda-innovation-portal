@@ -18,7 +18,8 @@ const SECTORS = [
   ['poultry', 'Small business', 'Poultry, retail and services', 'A poultry farmer beside her hens'],
 ];
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
+  const { deleted } = await searchParams;
   const me = await getMe();
   const start = me ? '/app/ideas/new' : '/login?mode=signup';
   return (
@@ -34,6 +35,7 @@ export default async function Home() {
       </header>
       <main id="main">
         <div className="wrap stack">
+          {deleted && <p className="notice" role="status">Your account and all your submissions have been deleted.</p>}
           <section className="hero">
             <div>
               <h1>Bring your idea to CEDA</h1>
