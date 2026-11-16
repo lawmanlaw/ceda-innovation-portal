@@ -11,6 +11,8 @@ import {
   assignEvaluator, moveIdea, postFeedback, removeAttachment, saveScores, unassignEvaluator, withdrawIdea,
 } from '@/app/app/actions';
 
+const SCORE_WORDS = ['Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
+
 export const metadata = { title: 'Idea' };
 
 const DECISIONS: Partial<Record<Stage, { to: Stage; label: string }[]>> = {
@@ -42,10 +44,6 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
     sb.from('assignments').select('submitted_at').eq('idea_id', id).eq('evaluator_id', me.id).maybeSingle(),
   ]);
 
-  const signed = files?.length
-    ? (await sb.storage.from('idea-files').createSignedUrls(files.map((f) => f.storage_path), 300)).data ?? []
-    : [];
-  const fileUrl = (path: string) => signed.find((s) => s.path === path)?.signedUrl;
 
   // Panel-only data
   let panel: null | {
@@ -131,7 +129,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
             <ul style={{ paddingLeft: '1.1rem' }}>
               {files?.map((f) => (
                 <li key={f.id} className="row between">
-                  <a href={fileUrl(f.storage_path) ?? undefined} target="_blank" rel="noopener noreferrer">{f.file_name}</a>
+                  <a href={`/app/files/${f.id}`} download>{f.file_name}</a>
                   <span className="row">
                     <small>{Math.ceil(f.size_bytes / 1024)} KB</small>
                     {editable && (
@@ -158,13 +156,19 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
                 }>
                   <input type="hidden" name="idea_id" value={id} />
                   {criteria.map((c) => (
-                    <fieldset key={c.id} style={{ border: 0, padding: 0, margin: '0 0 1rem' }}>
-                      <legend style={{ fontWeight: 600 }}>{c.name} <span className="muted">(0 to {c.max_score}, weight {c.weight})</span></legend>
+                    <fieldset key={c.id} className="score-row">
+                      <legend>{c.name}</legend>
                       {c.description && <span className="hint">{c.description}</span>}
-                      <div className="grid" style={{ gridTemplateColumns: '110px 1fr' }}>
-                        <input type="number" name={`score_${c.id}`} min={0} max={c.max_score} step={1} aria-label={`${c.name} score`} defaultValue={myScores.get(c.id)?.score ?? ''} />
-                        <input name={`comment_${c.id}`} maxLength={1000} placeholder="Reason (optional)" aria-label={`${c.name} comment`} defaultValue={myScores.get(c.id)?.comment ?? ''} />
+                      <div className="score-scale" role="radiogroup" aria-label={`${c.name}, 1 Poor to ${c.max_score} Excellent`}>
+                        {Array.from({ length: c.max_score }, (_, k) => k + 1).map((n) => (
+                          <label key={n} className="score-pick">
+                            <input type="radio" name={`score_${c.id}`} value={n} defaultChecked={myScores.get(c.id)?.score === n} />
+                            <span>{n}</span>
+                            <small>{SCORE_WORDS[n - 1] ?? ''}</small>
+                          </label>
+                        ))}
                       </div>
+                      <textarea name={`comment_${c.id}`} maxLength={1000} rows={2} placeholder="Comment for the panel (optional)" aria-label={`${c.name} comment`} defaultValue={myScores.get(c.id)?.comment ?? ''} />
                     </fieldset>
                   ))}
                 </ActionForm>

@@ -33,6 +33,8 @@ export default function DraftForm({ fields, categories, districts, draft, files,
   const [dirty, setDirty] = useState(false);
   const [status, setStatus] = useState<{ kind: 'idle' | 'saving' | 'saved' | 'error'; at?: Date }>({ kind: draft ? 'saved' : 'idle', at: draft ? new Date(draft.updated_at) : undefined });
   const [confirm, setConfirm] = useState(false);
+  const [owns, setOwns] = useState(false);
+  const [final, setFinal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const saving = useRef<Promise<string | null> | null>(null);
@@ -89,7 +91,7 @@ export default function DraftForm({ fields, categories, districts, draft, files,
     setErr(null);
     const ideaId = (await save()) ?? idRef.current;
     if (!ideaId) { setBusy(false); setConfirm(false); return setErr('Give your idea a title first.'); }
-    const { error } = await sb.rpc('submit_draft', { p_idea: ideaId });
+    const { error } = await sb.rpc('submit_draft', { p_idea: ideaId, p_ip_confirmed: owns && final });
     if (error) { setBusy(false); setConfirm(false); return setErr(friendlyError(error)); }
     router.replace(`/app/ideas/${ideaId}?new=1`);
     router.refresh();
@@ -109,6 +111,18 @@ export default function DraftForm({ fields, categories, districts, draft, files,
     await sb.from('attachments').delete().eq('id', f.id);
     router.refresh();
   }
+
+  // Pre-submit checklist: what must be done, and what is recommended
+  const missing = fields.filter((f) => f.required && !(v.answers[f.key] ?? '').trim());
+  const checks: { label: string; ok: boolean; target: string; required: boolean }[] = [
+    { label: 'Title of at least 5 characters', ok: v.title.trim().length >= 5, target: 'title', required: true },
+    { label: 'Summary of 20 to 600 characters', ok: v.summary.trim().length >= 20, target: 'summary', required: true },
+    { label: 'Category and district chosen', ok: Boolean(v.category && v.district), target: v.category ? 'district' : 'category', required: true },
+    { label: missing.length ? `${missing.length} required ${missing.length === 1 ? 'question' : 'questions'} still empty` : 'All required questions answered', ok: !missing.length, target: missing[0] ? `a_${missing[0].key}` : 'title', required: true },
+    { label: files.length ? `${files.length} supporting ${files.length === 1 ? 'file' : 'files'} attached and checked` : 'No supporting files yet (recommended: a plan, pitch deck or photos)', ok: files.length > 0, target: 'files', required: false },
+  ];
+  const ready = checks.every((c) => c.ok || !c.required) && owns && final;
+  const jump = (target: string) => { setConfirm(false); setTimeout(() => document.getElementById(target)?.focus(), 50); };
 
   const statusText = status.kind === 'saving' ? 'Saving...' : status.kind === 'saved' && status.at ? `Draft saved at ${time(status.at)}`
     : status.kind === 'error' ? 'Not saved. Check your connection.' : 'Your draft saves automatically as you type';
@@ -163,7 +177,7 @@ export default function DraftForm({ fields, categories, districts, draft, files,
         );
       })}
 
-      <div className="field">
+      <div className="field" id="files" tabIndex={-1}>
         <label>Supporting files</label>
         {!id && <span className="hint">Start typing above and you can attach files once your draft is saved.</span>}
         {files.map((f) => (
@@ -178,17 +192,30 @@ export default function DraftForm({ fields, categories, districts, draft, files,
       {err && <p className="notice bad" role="alert">{err}</p>}
 
       {confirm ? (
-        <div className="notice stack">
-          <strong>Submit this idea now?</strong>
-          <span>Once submitted, it is final. You can only change it if the panel returns it to you for changes.</span>
+        <section className="checklist" aria-labelledby="checklist-title">
+          <h2 id="checklist-title">Before you send</h2>
+          <p className="muted">Let's check everything together. Once submitted, your idea is final unless the panel returns it for changes.</p>
+          <ul>
+            {checks.map((c) => (
+              <li key={c.label} className={c.ok ? 'ok' : c.required ? 'todo' : 'warn'}>
+                <span className="mark" aria-hidden="true">{c.ok ? '\u2713' : c.required ? '\u2715' : '!'}</span>
+                <span>{c.label}</span>
+                {!c.ok && <button type="button" className="btn ghost small" onClick={() => jump(c.target)}>Fix</button>}
+              </li>
+            ))}
+          </ul>
+          <label className="row consent"><input type="checkbox" checked={owns} onChange={(e) => setOwns(e.target.checked)} />
+            <span>This idea is my own, or I am submitting it with my team&apos;s permission, and I have the right to share the files attached.</span></label>
+          <label className="row consent"><input type="checkbox" checked={final} onChange={(e) => setFinal(e.target.checked)} />
+            <span>The information is accurate, and I understand that submitting is final.</span></label>
           <div className="row">
-            <button className="btn" onClick={submit} disabled={busy} aria-busy={busy}>Yes, submit</button>
+            <button className="btn" onClick={submit} disabled={busy || !ready} aria-busy={busy}>Submit idea</button>
             <button className="btn ghost" onClick={() => setConfirm(false)} disabled={busy}>Keep editing</button>
           </div>
-        </div>
+        </section>
       ) : (
         <div className="row between">
-          <button className="btn" onClick={() => setConfirm(true)} disabled={busy}>Submit idea</button>
+          <button className="btn" onClick={() => { save(); setConfirm(true); }} disabled={busy}>Review and submit</button>
           {id && <button type="button" className="btn danger small" onClick={discard} disabled={busy}>Delete draft</button>}
         </div>
       )}

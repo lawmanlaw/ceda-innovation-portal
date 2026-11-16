@@ -118,6 +118,7 @@ drop policy if exists "idea files: owner deletes own files" on storage.objects;
 create policy "idea files: owner uploads while editable" on storage.objects for insert to authenticated
   with check (bucket_id = 'idea-files' and exists (select 1 from public.ideas i
     where i.id = ((storage.foldername(name))[1])::uuid and i.owner_id = auth.uid() and i.stage in ('draft', 'feedback')));
+drop policy if exists "idea files: owner deletes while editable" on storage.objects;
 create policy "idea files: owner deletes while editable" on storage.objects for delete to authenticated
   using (bucket_id = 'idea-files' and exists (select 1 from public.ideas i
     where i.id = ((storage.foldername(name))[1])::uuid and i.owner_id = auth.uid() and i.stage in ('draft', 'feedback')));

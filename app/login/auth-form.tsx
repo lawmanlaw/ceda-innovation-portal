@@ -27,6 +27,11 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
   const [info, setInfo] = useState<string | null>(null);
   const [verifyType, setVerifyType] = useState<'email' | 'recovery'>('email');
 
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [pw2Touched, setPw2Touched] = useState(false);
+  const mismatch = mode === 'signup' && pw2.length > 0 && (pw2Touched || pw2.length >= pw.length) && pw !== pw2;
+
   const go = (m: Mode) => {
     setError(null);
     setInfo(null);
@@ -81,7 +86,11 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
       if (mode === 'signup') {
         const password = String(f.get('password'));
         if (password.length < 10) throw new Error('Use at least 10 characters for your password.');
-        if (password !== String(f.get('password2'))) throw new Error('The two passwords do not match.');
+        if (password !== String(f.get('password2'))) {
+          setPw2Touched(true);
+          document.getElementById('password2')?.focus();
+          return;
+        }
         if (!f.get('consent')) throw new Error('Please agree to the privacy notice to continue.');
         const { error } = await emailLinkClient().auth.signUp({
           email: v('email'),
@@ -133,7 +142,7 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
   }
 
   return (
-    <form onSubmit={submit} className="stack" noValidate={false}>
+    <form onSubmit={submit} className={`stack${mode === 'signup' ? ' signup' : ''}`} noValidate={false}>
       <h1 style={{ fontSize: '1.5rem' }}>{TITLES[mode]}</h1>
       {info && <p className="notice" role="status">{info}</p>}
       {(mode === 'signin' || mode === 'signup') && (
@@ -143,15 +152,14 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
             Continue with Google
           </button>
           <p className="muted" style={{ fontSize: '.85rem', margin: 0 }}>By continuing with Google you agree to the <a href="/help#privacy" target="_blank">privacy notice</a>.</p>
-          <p className="muted" style={{ textAlign: 'center', margin: 0 }}>or use your email</p>
+          <p className="or-line"><span>or use your email</span></p>
         </>
       )}
       {error && <p className="notice bad" role="alert">{error}</p>}
 
       {mode === 'signup' && (
-        <>
+        <div className="grid cols-2 tight">
           <div className="field"><label htmlFor="full_name">Full name</label><input id="full_name" name="full_name" required maxLength={120} autoComplete="name" /></div>
-          <div className="field"><label htmlFor="organisation">Company or organisation <span className="muted">(optional)</span></label><input id="organisation" name="organisation" maxLength={120} autoComplete="organization" /></div>
           <div className="field">
             <label htmlFor="district">District or town</label>
             <select id="district" name="district" required defaultValue="">
@@ -159,14 +167,32 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
               {districts.map((d) => <option key={d}>{d}</option>)}
             </select>
           </div>
-        </>
+          <div className="field"><label htmlFor="email">Email</label><input id="email" name="email" type="email" required autoComplete="email" defaultValue={email} /></div>
+          <div className="field"><label htmlFor="organisation">Organisation <span className="muted">(optional)</span></label><input id="organisation" name="organisation" maxLength={120} autoComplete="organization" /></div>
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input id="password" name="password" type="password" required minLength={10} autoComplete="new-password" aria-describedby="pw-hint"
+              value={pw} onChange={(e) => setPw(e.target.value)} />
+            <span id="pw-hint" className={`field-note${pw.length >= 10 ? ' ok' : ''}`}>
+              {pw.length >= 10 ? 'Long enough' : pw.length ? `${10 - pw.length} more ${10 - pw.length === 1 ? 'character' : 'characters'}` : 'At least 10 characters'}
+            </span>
+          </div>
+          <div className="field">
+            <label htmlFor="password2">Repeat password</label>
+            <input id="password2" name="password2" type="password" required autoComplete="new-password" aria-describedby="pw2-hint" aria-invalid={mismatch}
+              value={pw2} onChange={(e) => setPw2(e.target.value)} onBlur={() => setPw2Touched(true)} />
+            <span id="pw2-hint" className={`field-note${mismatch ? ' bad' : pw2 && pw === pw2 ? ' ok' : ''}`} role={mismatch ? 'alert' : undefined}>
+              {mismatch ? 'Passwords do not match' : pw2 && pw === pw2 ? 'Passwords match' : '\u00a0'}
+            </span>
+          </div>
+        </div>
       )}
 
-      {['signin', 'code', 'signup', 'forgot'].includes(mode) && (
+      {['signin', 'code', 'forgot'].includes(mode) && (
         <div className="field"><label htmlFor="email">Email</label><input id="email" name="email" type="email" required autoComplete="email" defaultValue={email} /></div>
       )}
 
-      {['signin', 'signup', 'reset'].includes(mode) && (
+      {['signin', 'reset'].includes(mode) && (
         <div className="field">
           <label htmlFor="password">{mode === 'signin' ? 'Password' : 'New password'}</label>
           {mode !== 'signin' && <span className="hint">At least 10 characters.</span>}
@@ -174,13 +200,10 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
         </div>
       )}
       {mode === 'signup' && (
-        <>
-          <div className="field"><label htmlFor="password2">Repeat password</label><input id="password2" name="password2" type="password" required autoComplete="new-password" /></div>
-          <label className="row" style={{ fontWeight: 400, alignItems: 'flex-start' }}>
-            <input type="checkbox" name="consent" required style={{ marginTop: '.35rem' }} />
-            <span>I agree to CEDA processing my details to evaluate my ideas, as set out in the <a href="/help#privacy" target="_blank">privacy notice</a>.</span>
-          </label>
-        </>
+        <label className="row consent">
+          <input type="checkbox" name="consent" required />
+          <span>I agree to CEDA processing my details to evaluate my ideas, as set out in the <a href="/help#privacy" target="_blank">privacy notice</a>.</span>
+        </label>
       )}
 
       {mode === 'verify' && (
