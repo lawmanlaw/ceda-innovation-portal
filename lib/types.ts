@@ -1,4 +1,4 @@
-export type Role = 'submitter' | 'evaluator' | 'adjudicator' | 'admin' | 'agent';
+export type Role = 'submitter' | 'evaluator' | 'adjudicator' | 'admin' | 'agent' | 'observer';
 export type Stage = 'submitted' | 'in_review' | 'feedback' | 'approved' | 'awarded' | 'rejected' | 'withdrawn';
 
 export const STAGES: { key: Stage; label: string }[] = [
@@ -25,6 +25,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   adjudicator: 'Adjudicator',
   admin: 'Administrator',
   agent: 'Service consultant',
+  observer: 'Committee observer',
 };
 
 export type FormField = {

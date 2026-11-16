@@ -7,7 +7,7 @@ import { fmtDate } from '@/lib/util';
 export const metadata = { title: 'All ideas' };
 
 export default async function AllIdeas({ searchParams }: { searchParams: Promise<{ stage?: string; district?: string; q?: string }> }) {
-  await requireMe('adjudicator', 'admin');
+  await requireMe('adjudicator', 'admin', 'observer');
   const sp = await searchParams;
   const sb = await supabaseServer();
   let query = sb.from('ideas').select('id, ref, title, stage, district, submitted_at, stage_changed_at, version').order('submitted_at', { ascending: false }).limit(200);

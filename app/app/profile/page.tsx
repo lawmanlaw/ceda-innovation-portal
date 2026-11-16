@@ -11,6 +11,7 @@ export default async function Profile() {
   return (
     <div className="stack" style={{ maxWidth: 620 }}>
       <h1>Profile and alerts</h1>
+      <p><a href="/reset-password">Change my password</a></p>
       <div className="card">
         <ActionForm action={updateProfile} submit="Save">
           <div className="field"><label htmlFor="full_name">Full name</label><input id="full_name" name="full_name" defaultValue={me.full_name} required maxLength={120} /></div>

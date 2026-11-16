@@ -22,7 +22,7 @@ const optUrl = z.string().trim().max(300).refine((v) => v === '' || /^https:\/\/
 
 export async function setRole(_: ActionState, f: FormData): Promise<ActionState> {
   const sb = await admin();
-  const p = z.object({ id: z.string().uuid(), role: z.enum(['submitter', 'evaluator', 'adjudicator', 'admin', 'agent']) })
+  const p = z.object({ id: z.string().uuid(), role: z.enum(['submitter', 'evaluator', 'adjudicator', 'admin', 'agent', 'observer']) })
     .safeParse({ id: f.get('id'), role: f.get('role') });
   if (!p.success) return { error: 'Choose a role.' };
   const { error } = await sb.from('profiles').update({ role: p.data.role }).eq('id', p.data.id);

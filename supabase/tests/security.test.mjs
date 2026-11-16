@@ -12,13 +12,13 @@ create table storage.objects (id uuid default gen_random_uuid(), bucket_id text,
 create function storage.foldername(n text) returns text[] language sql as $$ select string_to_array(n,'/') $$;
 grant usage on schema public, auth, storage to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
 await db.exec(`grant select, insert, update, delete on all tables in schema public to authenticated;
 grant select on all tables in schema public to anon; grant usage, select on all sequences in schema public to authenticated;`);
-const U = { sub:'00000000-0000-0000-0000-000000000001', ev:'00000000-0000-0000-0000-000000000002', adj:'00000000-0000-0000-0000-000000000003', other:'00000000-0000-0000-0000-000000000004', agent:'00000000-0000-0000-0000-000000000005' };
+const U = { sub:'00000000-0000-0000-0000-000000000001', ev:'00000000-0000-0000-0000-000000000002', adj:'00000000-0000-0000-0000-000000000003', other:'00000000-0000-0000-0000-000000000004', agent:'00000000-0000-0000-0000-000000000005', obs:'00000000-0000-0000-0000-000000000006' };
 for (const [k,id] of Object.entries(U)) await db.query(`insert into auth.users(id,email,raw_user_meta_data) values ($1,$2,$3)`, [id, k+'@x.bw', {full_name:k, role:'admin'}]);
 await db.exec(`update public.profiles set role='evaluator' where id='${U.ev}'; update public.profiles set role='adjudicator' where id='${U.adj}'; update public.profiles set role='agent' where id='${U.agent}';`);
 const as = async (who, sql, params=[]) => {
@@ -79,3 +79,12 @@ const adjIdea = (await as('adj', `select * from public.submit_idea('Adjudicator 
 check('no self decision', await as('adj', `select public.move_idea($1,'rejected','no')`,[adjIdea.id]), r=>typeof r==='string' && r.includes('own idea'));
 let last; for (let i=0;i<6;i++) last = await as('sub', `select id from public.submit_idea('Bulk idea ${i}','Testing the hourly submission limit here',1::smallint,'Gaborone',$1)`, [answers]);
 check('submission rate limit', last, r=>typeof r==='string' && r.includes('5 ideas'));
+
+await db.exec(`select set_config('request.uid','',false); update public.profiles set role='observer' where id='${U.obs}'`);
+check('observer sees ideas', await as('obs', `select count(*)::int n from public.ideas`), r=>r[0].n>0);
+check('observer cannot post feedback', await as('obs', `insert into public.feedback(idea_id,author_id,body) values ($1,auth.uid(),'hi')`,[own.id]), r=>typeof r==='string');
+check('observer cannot decide', await as('obs', `select public.move_idea($1,'rejected','x')`,[own.id]), r=>typeof r==='string');
+const evil = "Robert'); drop table public.ideas; --";
+check('sql injection stored as plain text', await as('other', `select title from public.submit_idea($1,'A summary that is long enough to pass',1::smallint,'Gaborone',$2)`, [evil, {...answers, problem:"x' or '1'='1"}]), r=>Array.isArray(r) && r[0].title===evil);
+check('tables intact after injection', (await db.query(`select count(*)::int n from public.ideas`)).rows[0].n, n=>n>5);
+check('injected district rejected', await as('other', `select public.submit_idea('Valid title','A summary that is long enough to pass',1::smallint,$1,$2)`, ["Gaborone' or 1=1 --", answers]), r=>typeof r==='string');

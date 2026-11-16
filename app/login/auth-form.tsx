@@ -92,7 +92,7 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
         });
         if (error) throw new Error(error.message.includes('rate') ? 'Too many attempts. Please wait a minute.' : 'We could not create the account. Check your details and try again.');
         setEmail(v('email'));
-        setInfo('Almost done. We have sent you an email: open it and tap the link to confirm your address. You can close this page.');
+        setInfo('Almost done. If this is a new account, we have sent you an email: open it and tap the link to confirm your address. If you already have an account, no email is sent, so sign in instead.');
         return;
       }
       if (mode === 'verify') {

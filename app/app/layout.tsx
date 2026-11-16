@@ -10,6 +10,7 @@ const NAV: Record<Role, [string, string][]> = {
   adjudicator: [['/app', 'Overview'], ['/app/ideas', 'All ideas'], ['/app/reports', 'Reports']],
   admin: [['/app', 'Overview'], ['/app/ideas', 'All ideas'], ['/app/reports', 'Reports'], ['/app/agent', 'Live chat'], ['/app/admin', 'Settings'], ['/app/audit', 'Audit trail']],
   agent: [['/app/agent', 'Live chat']],
+  observer: [['/app/ideas', 'All ideas']],
 };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
