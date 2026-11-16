@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Icon from '@/components/icon';
 import { notFound } from 'next/navigation';
 import { requireMe, supabaseServer } from '@/lib/supabase/server';
 import { StageLabel, StageTrack } from '@/components/stage';
@@ -91,7 +92,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
   return (
     <div className="stack">
       <p><Link href={isPanel ? '/app/ideas' : '/app'}>Back</Link></p>
-      {isNew && <p className="notice" role="status">Your idea has been submitted as {idea.ref}. We have sent you an alert and will tell you as soon as review starts.</p>}
+      {isNew && <p className="notice row" role="status" style={{ flexWrap: 'nowrap' }}><Icon name="bulb" />Your idea has been submitted as {idea.ref}. We have sent you an alert and will tell you as soon as review starts.</p>}
 
       <div className="row between">
         <div>

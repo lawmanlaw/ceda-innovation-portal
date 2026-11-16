@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
+import Icon from '@/components/icon';
 
 type Mode = 'signin' | 'code' | 'signup' | 'verify' | 'forgot' | 'reset';
 
@@ -20,6 +21,7 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [verifyType, setVerifyType] = useState<'email' | 'recovery'>('email');
@@ -30,9 +32,13 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
     setMode(m);
   };
 
+  // Show the tick briefly, then move on
   const done = () => {
-    router.replace('/app');
-    router.refresh();
+    setSuccess(true);
+    setTimeout(() => {
+      router.replace('/app');
+      router.refresh();
+    }, 700);
   };
 
   // Same wording whether or not the account exists, so the form can't be used to find out who is registered
@@ -113,6 +119,16 @@ export default function AuthForm({ initialMode, districts }: { initialMode: Mode
     } finally {
       setBusy(false);
     }
+  }
+
+  if (success) {
+    return (
+      <div className="success" role="status">
+        <Icon name="check" className="tick" />
+        <strong>You are signed in</strong>
+        <span className="muted">Taking you to your dashboard</span>
+      </div>
+    );
   }
 
   return (
