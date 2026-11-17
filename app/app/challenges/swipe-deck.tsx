@@ -17,6 +17,7 @@ type Drag = { x: number; y: number; t: number; vx: number; sx: number; sy: numbe
 const Heart = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5.2-8-11.2A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 2.8C20 15.8 12 21 12 21z" fill="currentColor" /></svg>;
 const Cross = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" fill="none" /></svg>;
 const Up = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M6 11l6-6 6 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>;
+const Undo = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4V2M4.5 7A8.5 8.5 0 1 1 3.6 13" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>;
 const Pin = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.3 7-12a7 7 0 0 0-14 0c0 5.7 7 12 7 12z" fill="currentColor" /><circle cx="12" cy="10" r="2.6" fill="#7a1e1e" /></svg>;
 
 export default function SwipeDeck({ userId, home, cards, decided, districts }: {
@@ -26,7 +27,8 @@ export default function SwipeDeck({ userId, home, cards, decided, districts }: {
   const [done, setDone] = useState(() => new Map(decided.map((d) => [d.challenge_id, d.saved])));
   const [area, setArea] = useState('near');
   const [here, setHere] = useState(() => districtPoint(home));
-  const [tab, setTab] = useState<'swipe' | 'basket'>('swipe');
+  const [tab, setTab] = useState<'swipe' | 'basket' | 'skipped'>('swipe');
+  const [history, setHistory] = useState<string[]>([]);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [fly, setFly] = useState<null | { dir: 1 | -1; y: number }>(null);
@@ -44,6 +46,7 @@ export default function SwipeDeck({ userId, home, cards, decided, districts }: {
   }, [cards, done, area, here]);
   const top = deck[0];
   const basket = cards.filter((c) => done.get(c.id) === true);
+  const skipped = cards.filter((c) => done.get(c.id) === false);
   const width = () => deckRef.current?.clientWidth ?? 360;
   const progress = fly ? 1 : Math.min(1, Math.abs(pos.x) / FLY);
 
@@ -54,7 +57,7 @@ export default function SwipeDeck({ userId, home, cards, decided, districts }: {
     setBurst(saved ? 'save' : 'skip');
     if (navigator.vibrate) navigator.vibrate(saved ? [12, 40, 12] : 10);
     setTimeout(() => setBurst(null), 650);
-    setTimeout(() => { setDone((m) => new Map(m).set(id, saved)); setFly(null); setPos({ x: 0, y: 0 }); }, 340);
+    setTimeout(() => { setDone((m) => new Map(m).set(id, saved)); setHistory((h) => [...h, id]); setFly(null); setPos({ x: 0, y: 0 }); }, 340);
     void sb.from('interests').upsert({ user_id: userId, challenge_id: id, saved });
   }
   async function vote() {
@@ -62,6 +65,22 @@ export default function SwipeDeck({ userId, home, cards, decided, districts }: {
     const r = await upvote(top.id);
     if (r.error) { setToast(r.error); } else { setVotes((v) => ({ ...v, [top.id]: r.n ?? top.upvotes })); setToast('Thanks, your vote is counted.'); }
     setTimeout(() => setToast(null), 2400);
+  }
+  // Skipped cards are kept, not lost: they wait in the Skipped pile and can come back any time
+  async function keep(id: string) {
+    setDone((m) => new Map(m).set(id, true));
+    await sb.from('interests').upsert({ user_id: userId, challenge_id: id, saved: true });
+  }
+  function undo() {
+    const id = history[history.length - 1];
+    if (!id) return;
+    setHistory((h) => h.slice(0, -1));
+    void remove(id);
+  }
+  async function showSkippedAgain() {
+    const ids = skipped.map((c) => c.id);
+    setDone((m) => { const n = new Map(m); ids.forEach((i) => n.delete(i)); return n; });
+    await sb.from('interests').delete().eq('user_id', userId).eq('saved', false);
   }
   async function remove(id: string) {
     setDone((m) => { const n = new Map(m); n.delete(id); return n; });
@@ -113,6 +132,7 @@ export default function SwipeDeck({ userId, home, cards, decided, districts }: {
         <div className="seg" role="tablist">
           <button type="button" role="tab" aria-selected={tab === 'swipe'} aria-pressed={tab === 'swipe'} onClick={() => setTab('swipe')}>Discover</button>
           <button type="button" role="tab" aria-selected={tab === 'basket'} aria-pressed={tab === 'basket'} onClick={() => setTab('basket')}>My basket ({basket.length})</button>
+          <button type="button" role="tab" aria-selected={tab === 'skipped'} aria-pressed={tab === 'skipped'} onClick={() => setTab('skipped')}>Skipped ({skipped.length})</button>
         </div>
         {tab === 'swipe' && (
           <div className="row" style={{ gap: '.5rem' }}>
@@ -159,6 +179,7 @@ export default function SwipeDeck({ userId, home, cards, decided, districts }: {
                 {burst && <div className={`burst burst-${burst}`} aria-hidden="true">{burst === 'save' ? <Heart /> : <Cross />}</div>}
               </div>
               <div className="fab-row">
+                <button type="button" className="fab fab-undo" onClick={undo} disabled={!history.length} aria-label="Bring back the last card"><Undo /></button>
                 <button type="button" className="fab fab-no" onClick={() => decide(false)} aria-label="Skip this challenge"><Cross /></button>
                 <button type="button" className="fab vote" onClick={vote} aria-label="Upvote: this affects me too"><Up /></button>
                 <button type="button" className="fab save" onClick={() => decide(true)} aria-label="Save to my basket"><Heart /></button>
@@ -169,15 +190,22 @@ export default function SwipeDeck({ userId, home, cards, decided, districts }: {
             <div className="card empty-deck">
               <Bokamoso mode="yes" size={110} />
               <p>You have seen every challenge {area === 'near' ? 'for now' : `in ${area}`}. Try another area, or open your basket.</p>
+              {skipped.length > 0 && <button type="button" className="btn secondary" onClick={showSkippedAgain}>Go through the {skipped.length} skipped again</button>}
             </div>
           )}
         </div>
       ) : (
         <div className="basket">
-          {!basket.length && (
+          {tab === 'basket' && !basket.length && (
             <div className="card empty-deck"><SectorArt sector="other" className="empty-art" /><p>Your basket is empty. Swipe right on challenges you would like to work on.</p></div>
           )}
-          {basket.map((c) => (
+          {tab === 'skipped' && !skipped.length && (
+            <div className="card empty-deck"><SectorArt sector="environment" className="empty-art" /><p>Nothing skipped. Cards you swipe left wait here, so you can always come back to them.</p></div>
+          )}
+          {tab === 'skipped' && skipped.length > 1 && (
+            <div className="row between"><span className="muted">Skipped cards stay here until you decide.</span><button type="button" className="btn ghost small" onClick={() => { void showSkippedAgain(); setTab('swipe'); }}>Swipe through them again</button></div>
+          )}
+          {(tab === 'basket' ? basket : skipped).map((c) => (
             <article key={c.id} className="card basket-item">
               {c.has_photo ? <img src={`/challenges/photo/${c.id}`} alt="" className="basket-thumb" /> : <SectorArt sector={c.sector} className="basket-thumb" />}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -185,8 +213,9 @@ export default function SwipeDeck({ userId, home, cards, decided, districts }: {
                 <p className="muted" style={{ margin: '.2rem 0 0' }}>{c.district}{c.sector ? ` · ${c.sector}` : ''} · {c.upvotes} upvotes</p>
               </div>
               <div className="row" style={{ gap: '.4rem' }}>
-                <Link className="btn small" href="/app/ideas/new">Start an idea</Link>
-                <button type="button" className="btn ghost small" onClick={() => remove(c.id)}>Remove</button>
+                {tab === 'basket'
+                  ? <><Link className="btn small" href="/app/ideas/new">Start an idea</Link><button type="button" className="btn ghost small" onClick={() => remove(c.id)}>Remove</button></>
+                  : <><button type="button" className="btn small" onClick={() => keep(c.id)}>Save to basket</button><button type="button" className="btn ghost small" onClick={() => remove(c.id)}>Show again</button></>}
               </div>
             </article>
           ))}
