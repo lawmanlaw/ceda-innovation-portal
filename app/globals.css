@@ -740,6 +740,8 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 .fab:hover { transform: translateY(-3px) scale(1.06); }
 .fab:active { transform: scale(.88); transition-duration: 90ms; }
 .fab-no { background: #fff; color: #3f2c24; }
+.fab-undo { width: 44px; height: 44px; padding: 11px; background: #fff; color: #c6a218; }
+.fab:disabled { opacity: .4; cursor: default; transform: none; }
 .fab.vote { width: 48px; height: 48px; padding: 12px; background: #c6a218; color: #fff; }
 .fab.save { width: 70px; height: 70px; padding: 18px; background: #7a1e1e; color: #fff; }
 .empty-deck { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .5rem; }
