@@ -15,7 +15,7 @@ create function extensions.digest(t text, a text) returns bytea language sql imm
 create function extensions.gen_random_bytes(n int) returns bytea language sql volatile as $$ select decode(substr(md5(random()::text)||md5(random()::text),1,n*2),'hex') $$;
 grant usage on schema public, auth, storage, extensions to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql','0016_profile_photos.sql','0017_avatar_choice.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql','0016_profile_photos.sql','0017_avatar_choice.sql','0018_security_cleanup.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','').replace('create extension if not exists pgcrypto with schema extensions;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -31,8 +31,10 @@ const as = async (who, sql, params=[]) => {
 const check = (name, got, pass) => console.log(pass(got) ? 'PASS' : 'FAIL', name, pass(got) ? '' : JSON.stringify(got));
 check('role from metadata ignored', (await db.query(`select role from public.profiles where id=$1`,[U.sub])).rows[0].role, r=>r==='submitter');
 const answers = {problem:'p'.repeat(30), solution:'s', beneficiaries:'b', impact:'i', readiness:'Researched'};
-check('missing answer rejected', await as('sub', `select * from public.submit_idea('Solar dryer','A solar crop dryer for small farmers',1::smallint,'Gaborone',$1)`, [{problem:'x'}]), r=>typeof r==='string' && r.includes('Please answer'));
-const idea = (await as('sub', `select * from public.submit_idea('Solar dryer','A solar crop dryer for small farmers',1::smallint,'Gaborone',$1)`, [answers]))[0];
+const mk = async (a) => { const r = await as('sub', `select public.save_draft(null,'Solar dryer','A solar crop dryer for small farmers',1::smallint,'Gaborone',$1) id`, [a]); return r[0]?.id; };
+check('missing answer rejected', await as('sub', `select * from public.submit_draft($1,true)`, [await mk({problem:'x'})]), r=>typeof r==='string' && r.includes('Please answer'));
+check('old direct submit removed', await as('sub', `select * from public.submit_idea('Solar dryer','A solar crop dryer for small farmers',1::smallint,'Gaborone',$1)`, [answers]), r=>typeof r==='string');
+const idea = (await as('sub', `select * from public.submit_draft($1,true)`, [await mk(answers)]))[0];
 check('submit works', idea?.ref, r=>/^CEDA-\d\d-0001$/.test(r));
 check('direct update blocked', await as('sub', `update public.ideas set stage='awarded' returning id`), r=>Array.isArray(r) && r.length===0);
 check('other user cannot see', await as('other', `select id from public.ideas`), r=>r.length===0);
@@ -76,23 +78,24 @@ check('agent claims', await as('agent', `select public.claim_chat($1)`,[t[0].id]
 check('agent replies', await as('agent', `insert into public.chat_messages(thread_id,sender_id,body) values ($1,auth.uid(),'hi') returning id`,[t[0].id]), r=>Array.isArray(r));
 check('first reply tracked', (await db.query(`select first_reply_at from public.chat_threads`)).rows[0].first_reply_at, r=>!!r);
 check('chat hours fn', (await db.query(`select public.chat_is_open('2026-11-16 10:00+02') a, public.chat_is_open('2026-11-16 17:00+02') b, public.chat_is_open('2026-12-25 10:00+02') c`)).rows[0], r=>r.a && !r.b && !r.c);
-check('anon cannot submit', await (async()=>{await db.exec(`select set_config('request.uid','',false); set role anon;`); try{await db.query(`select public.submit_idea('aaaaa','bbbbbbbbbbbbbbbbbbbbbbbb',1::smallint,'Gaborone','{}')`);return 'ran'}catch(e){return 'ERR'}finally{await db.exec('reset role')}})(), r=>r==='ERR');
+check('anon cannot submit', await (async()=>{await db.exec(`select set_config('request.uid','',false); set role anon;`); try{await db.query(`select public.save_draft(null,'aaaaa','bbbbbbbbbbbbbbbbbbbbbbbb',1::smallint,'Gaborone','{}')`);return 'ran'}catch(e){return 'ERR'}finally{await db.exec('reset role')}})(), r=>r==='ERR');
 
-const own = (await as('ev', `select * from public.submit_idea('Evaluator idea','An idea submitted by an evaluator account',1::smallint,'Gaborone',$1)`, [answers]))[0];
+const own = (await db.query(`insert into public.ideas (owner_id,title,summary,category_id,district,answers,stage,ref,submitted_at) values ($1,'Evaluator idea','An idea submitted by a staff account here',1,'Gaborone',$2,'submitted','T-'||substr(md5(random()::text),1,6),now()) returning *`,[U.ev,answers])).rows[0];
 check('no self evaluation', await as('adj', `select public.assign_evaluator($1,$2)`,[own.id,U.ev]), r=>typeof r==='string' && r.includes('own idea'));
-const adjIdea = (await as('adj', `select * from public.submit_idea('Adjudicator idea','An idea submitted by an adjudicator account',1::smallint,'Gaborone',$1)`, [answers]))[0];
+const adjIdea = (await db.query(`insert into public.ideas (owner_id,title,summary,category_id,district,answers,stage,ref,submitted_at) values ($1,'Adjudicator idea','An idea submitted by a staff account here',1,'Gaborone',$2,'submitted','T-'||substr(md5(random()::text),1,6),now()) returning *`,[U.adj,answers])).rows[0];
 check('no self decision', await as('adj', `select public.move_idea($1,'rejected','no')`,[adjIdea.id]), r=>typeof r==='string' && r.includes('own idea'));
-let last; for (let i=0;i<6;i++) last = await as('sub', `select id from public.submit_idea('Bulk idea ${i}','Testing the hourly submission limit here',1::smallint,'Gaborone',$1)`, [answers]);
-check('submission rate limit', last, r=>typeof r==='string' && r.includes('5 ideas'));
+let last; for (let i=0;i<6;i++) last = await as('sub', `select public.save_draft(null,'Bulk idea','Testing the hourly submission limit here',1::smallint,'Gaborone',$1)`, [answers]);
+check('submission rate limit', last, r=>typeof r==='string' && r.includes('5 ideas an hour'));
 
 await db.exec(`select set_config('request.uid','',false); update public.profiles set role='observer' where id='${U.obs}'`);
 check('observer sees ideas', await as('obs', `select count(*)::int n from public.ideas`), r=>r[0].n>0);
 check('observer cannot post feedback', await as('obs', `insert into public.feedback(idea_id,author_id,body) values ($1,auth.uid(),'hi')`,[own.id]), r=>typeof r==='string');
 check('observer cannot decide', await as('obs', `select public.move_idea($1,'rejected','x')`,[own.id]), r=>typeof r==='string');
+await db.query(`insert into auth.users(id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000a','sub2x@x.bw','{"full_name":"sub2x"}')`); U.sub2x='00000000-0000-0000-0000-00000000000a';
 const evil = "Robert'); drop table public.ideas; --";
-check('sql injection stored as plain text', await as('other', `select title from public.submit_idea($1,'A summary that is long enough to pass',1::smallint,'Gaborone',$2)`, [evil, {...answers, problem:"x' or '1'='1"}]), r=>Array.isArray(r) && r[0].title===evil);
+check('sql injection stored as plain text', await as('sub2x', `select title from public.submit_draft((select public.save_draft(null,$1,'A summary that is long enough to pass',1::smallint,'Gaborone',$2)),true)`, [evil, {...answers, problem:"x' or '1'='1"}]), r=>Array.isArray(r) && r[0].title===evil);
 check('tables intact after injection', (await db.query(`select count(*)::int n from public.ideas`)).rows[0].n, n=>n>5);
-check('injected district rejected', await as('other', `select public.submit_idea('Valid title','A summary that is long enough to pass',1::smallint,$1,$2)`, ["Gaborone' or 1=1 --", answers]), r=>typeof r==='string');
+check('injected district rejected', await as('sub2x', `select public.submit_draft((select public.save_draft(null,'Valid title','A summary that is long enough to pass',1::smallint,$1,$2)),true)`, ["Gaborone' or 1=1 --", answers]), r=>typeof r==='string');
 
 await db.exec(`update public.ideas set submitted_at = now() - interval '2 hours'`);
 const d = (await as('sub', `select public.save_draft(null,'Ha','',null,'',$1) id`, [{problem:'half typed'}]))[0]?.id;
@@ -123,7 +126,6 @@ check('reviewer steps out', await as('ev', `select public.declare_conflict($1,'A
 check('assignment removed', (await db.query(`select count(*)::int n from public.assignments where idea_id=$1`,[d2])).rows[0].n, n=>n===0);
 check('conflict audited', (await db.query(`select count(*)::int n from public.audit_log where table_name='conflicts' and record_id=$1`,[d2])).rows[0].n, n=>n===1);
 check('conflicted reviewer cannot be re-added', await as('adj', `select public.assign_evaluator($1,$2)`,[d2,U.ev]), r=>typeof r==='string' && r.includes('conflict'));
-await db.exec(`insert into public.server_keys values (1, encode(sha256('srv-test'::bytea),'hex'))`);
 const asAnon = async (sql, params=[]) => { try { await db.exec('set role anon'); return (await db.query(sql, params)).rows; } catch (e) { return 'ERR: '+e.message; } finally { await db.exec('reset role'); } };
 const H = (x) => x.repeat(16);
 check('report needs device and network ids', await asAnon(`select public.report_challenge('bad','bad','A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null)`), r=>typeof r==='string' && r.includes('Not allowed'));
