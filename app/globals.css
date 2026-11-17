@@ -756,3 +756,6 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 @media (prefers-reduced-motion: reduce) {
   .swipe-card.top, .swipe-card.under, .burst, .burst-save::before, .fab, .basket-item, .sector-art .sa-sun { animation: none; transition: none; }
 }
+
+/* Top-bar menus: frosted but solid enough to read, and above everything */
+.topbar details[open] > .card { background: rgb(255 255 255 / .94); backdrop-filter: blur(22px) saturate(1.6); -webkit-backdrop-filter: blur(22px) saturate(1.6); z-index: 60; box-shadow: inset 0 1px 0 rgb(255 255 255 / .8), 0 16px 40px rgb(63 44 36 / .2); }
