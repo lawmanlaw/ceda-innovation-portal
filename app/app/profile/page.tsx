@@ -13,7 +13,7 @@ export default async function Profile() {
   return (
     <div className="stack" style={{ maxWidth: 620 }}>
       <h1>Profile and alerts</h1>
-      <PhotoForm id={me.id} name={me.full_name} v={me.photo_v ?? 0} />
+      <PhotoForm id={me.id} name={me.full_name} v={me.photo_v ?? 0} avatar={me.avatar} />
       <p><a href="/reset-password">Change my password</a></p>
       <div className="card">
         <ActionForm action={updateProfile} submit="Save">

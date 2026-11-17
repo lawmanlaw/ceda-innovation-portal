@@ -227,3 +227,14 @@ export async function setProfilePhoto(_: ActionState, f: FormData): Promise<Acti
   revalidatePath('/app', 'layout');
   return { ok: f.get('remove') ? 'Photo removed.' : 'Photo saved.' };
 }
+
+export async function setAvatar(name: string | null): Promise<ActionState> {
+  const me = await requireMe();
+  const { AVATARS } = await import('@/components/avatar-art');
+  if (name !== null && !AVATARS[name]) return { error: 'Choose one of the avatars.' };
+  const sb = await supabaseServer();
+  const { error } = await sb.from('profiles').update({ avatar: name }).eq('id', me.id);
+  if (error) return { error: friendlyError(error) };
+  revalidatePath('/app', 'layout');
+  return { ok: 'Avatar saved.' };
+}

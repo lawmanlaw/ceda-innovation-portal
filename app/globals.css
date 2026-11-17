@@ -836,3 +836,9 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 .photo-edit { position: absolute; inset: auto 0 0; margin: auto; width: max-content; padding: .15rem .55rem; border-radius: 999px; background: rgb(63 44 36 / .8); color: #fff; font-size: .75rem; font-weight: 600; transform: translateY(40%); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 520px) { .account-btn span { display: none; } .photo-form { flex-direction: column; text-align: center; } }
+
+.avatar-grid { display: flex; flex-wrap: wrap; gap: .45rem; }
+.avatar-choice { padding: 3px; border: 0; border-radius: 50%; background: none; cursor: pointer; transition: transform 200ms var(--spring), box-shadow 200ms var(--ease-out); }
+.avatar-choice:hover { transform: scale(1.12) rotate(-6deg); }
+.avatar-choice[aria-checked="true"] { box-shadow: 0 0 0 3px var(--accent); transform: scale(1.08); }
+.avatar-choice svg { display: block; }
