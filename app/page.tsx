@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BokamosoSeated from '@/components/bokamoso-seated';
 import { getMe } from '@/lib/supabase/server';
 import { STAGES } from '@/lib/types';
 import Icon from '@/components/icon';
@@ -47,10 +48,23 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
               </p>
               <div className="row">
                 <Link className="btn" href={start}>Submit an idea</Link>
-                <Link className="btn secondary" href="/help">How it works</Link>
+                <Link className="btn secondary" href="/report">Report a problem</Link>
               </div>
             </div>
             <img className="photo hero-photo" src="/img/gaborone.webp" alt="Gaborone seen from the air at sunrise" fetchPriority="high" />
+          </section>
+
+          <section className="community-band">
+            <BokamosoSeated size={170} say="Dumela!" />
+            <div>
+              <h2>Have a problem an innovator could solve?</h2>
+              <p>No account needed. Tell us about a challenge you or your community face, drop a pin, add a photo if you like, and get a tracking code. Once a CEDA moderator approves it, it appears on the challenge map for innovators to take on.</p>
+              <div className="row">
+                <Link className="btn" href="/report">Report a problem</Link>
+                <Link className="btn secondary" href="/challenges">See community challenges</Link>
+                <Link className="btn ghost" href="/report/track">Track a report</Link>
+              </div>
+            </div>
           </section>
 
           <section className="card">
