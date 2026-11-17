@@ -4,6 +4,7 @@ import { requireMe, supabaseServer } from '@/lib/supabase/server';
 import { StageLabel } from '@/components/stage';
 import Icon, { type IconName } from '@/components/icon';
 import { Activity, Stat, Steps, Tile, tone, type Step } from '@/components/dash';
+import BokamosoSeated from '@/components/bokamoso-seated';
 import { STAGE_LABEL, type Stage } from '@/lib/types';
 import type { Idea } from '@/lib/types';
 import { fmtDate } from '@/lib/util';
@@ -65,7 +66,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           )}
         </div>
         <aside className="dash-side">
-          <h2>Statistics</h2>
+          <div className="bk-card glass"><BokamosoSeated size={130} say="Dumela!" /><p>I&apos;m Bokamoso. Finish a draft or swipe through challenges near you.</p></div>
+        <h2>Statistics</h2>
           <div className="dstats">
             <Stat label="Ideas submitted" value={ideas.length} />
             <Stat label="In review" value={count(['submitted', 'in_review', 'feedback'])} />
@@ -156,6 +158,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <Steps items={steps} empty="Nothing is waiting on you. Well done." />
       </div>
       <aside className="dash-side">
+        <div className="bk-card glass"><BokamosoSeated size={130} say="Dumela!" /><p>I&apos;m Bokamoso. Here is what needs you today.</p></div>
         <h2>Statistics</h2>
         <div className="dstats">
           <Stat label="Ideas in the portal" value={list.length} />
