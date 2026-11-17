@@ -765,30 +765,58 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 @media (max-width: 700px) { .community-band { flex-direction: column; text-align: center; } .community-band .row { justify-content: center; } }
 
 /* Bokamoso's routine: poses switch with data-act on the seated figure */
-.bk-seated .bk-arms, .bk-seated .bk-legs-stand, .bk-seated .bk-sparks { opacity: 0; transition: opacity 220ms var(--ease-out); }
+.bk-seated .bk-arms, .bk-seated .bk-legs-stand, .bk-seated .bk-fx { opacity: 0; transition: opacity 220ms var(--ease-out); }
 .bk-seated .bk-legs-sit, .bk-seated .bk-laptop { transition: opacity 220ms var(--ease-out); }
-.bk-seated[data-act="type"] .bk-arms-type, .bk-seated[data-act="nod"] .bk-arms-type { opacity: 1; }
-.bk-seated[data-act="stretch"] .bk-arms-up, .bk-seated[data-act="cheer"] .bk-arms-up { opacity: 1; }
-.bk-seated[data-act="wave"] .bk-arms-wave, .bk-seated[data-act="thumbs"] .bk-arms-thumbs { opacity: 1; }
-.bk-seated[data-act="stand"] .bk-arms-down, .bk-seated[data-act="stand"] .bk-legs-stand, .bk-seated[data-act="cheer"] .bk-sparks { opacity: 1; }
-.bk-seated[data-act="stand"] .bk-legs-sit, .bk-seated[data-act="stand"] .bk-laptop { opacity: 0; }
+.bk-seated[data-act="type"] .bk-arms-type, .bk-seated[data-act="idea"] .bk-arms-type { opacity: 1; }
+.bk-seated:is([data-act="stretch"], [data-act="jump"], [data-act="juggle"]) .bk-arms-up { opacity: 1; }
+.bk-seated[data-act="dance"] .bk-arms-dance, .bk-seated[data-act="wave"] .bk-arms-wave, .bk-seated[data-act="coffee"] .bk-arms-coffee { opacity: 1; }
+.bk-seated:is([data-act="dance"], [data-act="jump"]) .bk-legs-stand { opacity: 1; }
+.bk-seated:is([data-act="dance"], [data-act="jump"]) :is(.bk-legs-sit, .bk-laptop) { opacity: 0; }
+.bk-seated[data-act="idea"] .bk-bulb, .bk-seated[data-act="juggle"] .bk-balls, .bk-seated[data-act="dance"] .bk-notes, .bk-seated[data-act="jump"] .bk-confetti { opacity: 1; }
+
 .bk-seated .bk-body { transition: transform 420ms var(--spring); transform-origin: 106px 180px; }
-.bk-seated[data-act="stand"] .bk-body { transform: translateY(-26px); animation: bk-hop 900ms var(--spring) 380ms; }
-.bk-seated[data-act="stretch"] .bk-body { transform: rotate(-4deg) translateY(-3px); }
-.bk-seated[data-act="cheer"] .bk-body { animation: bk-cheer 520ms ease-in-out 4; }
-.bk-seated[data-act="nod"] .bk-headwrap { animation: bk-nod 500ms ease-in-out 3; transform-origin: 106px 100px; }
-.bk-seated .bk-waver { transform-origin: 132px 126px; animation: bk-wave-arm 360ms ease-in-out infinite alternate; }
+.bk-seated[data-act="stretch"] .bk-body { transform: rotate(-5deg) translateY(-3px); }
+.bk-seated[data-act="dance"] .bk-body { animation: bk-dance 560ms ease-in-out infinite alternate; }
+.bk-seated[data-act="dance"] .bk-arms-dance { transform-origin: 106px 130px; animation: bk-seesaw 560ms ease-in-out infinite alternate; }
+.bk-seated[data-act="dance"] .bk-legs-stand { transform-origin: 110px 226px; animation: bk-knees 280ms ease-in-out infinite alternate; }
+.bk-seated[data-act="jump"] .bk-body { animation: bk-jump-body 620ms cubic-bezier(.3, 0, .3, 1) infinite alternate; }
+.bk-seated[data-act="jump"] .bk-legs-stand { animation: bk-jump-legs 620ms cubic-bezier(.3, 0, .3, 1) infinite alternate; }
+.bk-seated[data-act="juggle"] .bk-body { animation: bk-bounce 400ms ease-in-out infinite alternate; }
+.bk-seated[data-act="idea"] .bk-body { animation: bk-bounce 300ms var(--spring) 2 alternate; }
+.bk-seated[data-act="idea"] .bk-bulb { transform-origin: 62px 60px; animation: bk-pop 500ms var(--spring) both, bk-glow 700ms ease-in-out 500ms infinite alternate; }
+.bk-seated .bk-waver { transform-origin: 132px 126px; animation: bk-wave-arm 320ms ease-in-out infinite alternate; }
+.bk-seated .bk-sip { transform-origin: 150px 126px; animation: bk-sip 1500ms ease-in-out infinite; }
+.bk-seated .bk-steam { animation: bk-steam 1200ms ease-in-out infinite; }
 .bk-seated[data-act="type"] .bk-tap1 { animation: bk-tap 260ms ease-in-out infinite alternate; }
 .bk-seated[data-act="type"] .bk-tap2 { animation: bk-tap 260ms ease-in-out 130ms infinite alternate; }
-.bk-seated[data-act="cheer"] .bk-sparks path { animation: bk-spark 700ms ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.bk-seated[data-act="juggle"] .bk-balls circle { animation: bk-ball 900ms linear infinite; }
+.bk-seated[data-act="juggle"] .bk-balls circle:nth-child(2) { animation-delay: -300ms; }
+.bk-seated[data-act="juggle"] .bk-balls circle:nth-child(3) { animation-delay: -600ms; }
+.bk-seated[data-act="dance"] .bk-notes g { animation: bk-note 1100ms ease-in-out infinite; }
+.bk-seated[data-act="dance"] .bk-notes g:nth-child(2) { animation-delay: 350ms; }
+.bk-seated[data-act="dance"] .bk-notes g:nth-child(3) { animation-delay: 700ms; }
+.bk-seated[data-act="jump"] .bk-confetti rect { transform-box: fill-box; transform-origin: center; animation: bk-confetti 1500ms linear infinite; }
 .bk-seated .bk-line { animation: bk-say 300ms var(--spring) both; }
-@keyframes bk-hop { 0%, 100% { transform: translateY(-26px); } 40% { transform: translateY(-36px); } }
-@keyframes bk-cheer { 50% { transform: translateY(-7px); } }
-@keyframes bk-nod { 50% { transform: rotate(6deg) translateY(2px); } }
+@keyframes bk-dance { from { transform: translate(-7px, -26px) rotate(-8deg); } to { transform: translate(7px, -26px) rotate(8deg); } }
+@keyframes bk-seesaw { from { transform: rotate(-22deg); } to { transform: rotate(6deg); } }
+@keyframes bk-knees { to { transform: scaleY(.96); } }
+@keyframes bk-jump-body { from { transform: translateY(-22px) scaleY(.96); } to { transform: translateY(-64px); } }
+@keyframes bk-jump-legs { from { transform: translateY(0); } to { transform: translateY(-40px); } }
+@keyframes bk-bounce { to { transform: translateY(-5px); } }
+@keyframes bk-pop { from { transform: scale(0) rotate(-30deg); } }
+@keyframes bk-glow { to { filter: drop-shadow(0 0 8px #ffd27a); transform: scale(1.08); } }
 @keyframes bk-wave-arm { from { transform: rotate(-10deg); } to { transform: rotate(12deg); } }
+@keyframes bk-sip { 0%, 100% { transform: rotate(14deg); } 40%, 70% { transform: rotate(-4deg); } }
+@keyframes bk-steam { from { opacity: 0; transform: translateY(4px); } 50% { opacity: 1; } to { opacity: 0; transform: translateY(-6px); } }
 @keyframes bk-tap { to { transform: translateY(-2px); } }
-@keyframes bk-spark { from { transform: scale(.6) rotate(0); } to { transform: scale(1.2) rotate(45deg); } }
+@keyframes bk-ball { 0% { transform: translate(0, 30px); } 25% { transform: translate(18px, -6px); } 50% { transform: translate(36px, -16px); } 75% { transform: translate(54px, -6px); } 100% { transform: translate(72px, 30px); } }
+@keyframes bk-note { from { opacity: 0; transform: translateY(10px) rotate(-10deg); } 40% { opacity: 1; } to { opacity: 0; transform: translateY(-26px) rotate(12deg); } }
+@keyframes bk-confetti { from { transform: translateY(0) rotate(0); opacity: 1; } to { transform: translateY(210px) rotate(540deg); opacity: 0; } }
 @keyframes bk-say { from { opacity: 0; transform: translateY(4px); } }
+/* The bust celebrates with a wave, not a thumbs up */
+.bk[data-mode="yes"] .bk-thumb { transform: translateY(140px); }
+.bk[data-mode="yes"] .bk-wave { transform: none; transform-origin: 166px 190px; animation: bk-wave var(--motion-300) ease-in-out 6 alternate; }
+.bk[data-mode="yes"] .bk-head { animation: bk-bounce 300ms var(--spring) 4 alternate; }
 @media (prefers-reduced-motion: reduce) {
-  .bk-seated .bk-body, .bk-seated .bk-waver, .bk-seated .bk-tap1, .bk-seated .bk-tap2, .bk-seated .bk-sparks path, .bk-seated .bk-line, .bk-seated .bk-headwrap { animation: none; transition: none; }
+  .bk-seated *, .bk[data-mode="yes"] .bk-wave, .bk[data-mode="yes"] .bk-head { animation: none !important; transition: none !important; }
 }
