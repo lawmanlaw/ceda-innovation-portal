@@ -6,6 +6,7 @@ import Notifications from '@/components/notifications';
 import Dock from '@/components/dock';
 import Tour from '@/components/tour';
 import Sidebar from '@/components/sidebar';
+import MenuCloser from '@/components/menu-closer';
 
 const NAV: Record<Role, [string, string][]> = {
   submitter: [['/app', 'My ideas'], ['/app/challenges', 'Challenges'], ['/app/ideas/new', 'Submit an idea'], ['/app/chat', 'Chat with CEDA']],
@@ -25,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/app" className="brand"><span className="brand-mark"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /></span><i className="brand-rule" aria-hidden="true" /><span className="brand-name"><span>Innovation Portal</span></span></Link>
           <NavLinks links={[...NAV[me.role], ['/help', 'Help']]} />
           <Notifications userId={me.id} />
-          <details style={{ position: 'relative' }}>
+          <details name="topmenu" style={{ position: 'relative' }}>
             <summary className="btn ghost small" style={{ listStyle: 'none' }} aria-label="Account">
               {me.full_name || me.email}
             </summary>
@@ -48,6 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <Dock role={me.role} />
       {me.role === 'submitter' && <Tour />}
+      <MenuCloser />
     </>
   );
 }

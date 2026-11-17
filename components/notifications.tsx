@@ -40,7 +40,7 @@ export default function Notifications({ userId }: { userId: string }) {
   }
 
   return (
-    <details style={{ position: 'relative' }} onToggle={(e) => (e.currentTarget as HTMLDetailsElement).open && markAll()}>
+    <details name="topmenu" style={{ position: 'relative' }} onToggle={(e) => (e.currentTarget as HTMLDetailsElement).open && markAll()}>
       <summary className="btn ghost small" style={{ listStyle: 'none' }} aria-label={`Alerts, ${unread} unread`}>
         Alerts{unread > 0 && <strong style={{ color: 'var(--brand)' }}> {unread}</strong>}
       </summary>
