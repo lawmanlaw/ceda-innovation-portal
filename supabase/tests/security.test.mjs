@@ -15,7 +15,7 @@ create function extensions.digest(t text, a text) returns bytea language sql imm
 create function extensions.gen_random_bytes(n int) returns bytea language sql volatile as $$ select decode(substr(md5(random()::text)||md5(random()::text),1,n*2),'hex') $$;
 grant usage on schema public, auth, storage, extensions to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','').replace('create extension if not exists pgcrypto with schema extensions;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -125,22 +125,24 @@ check('conflict audited', (await db.query(`select count(*)::int n from public.au
 check('conflicted reviewer cannot be re-added', await as('adj', `select public.assign_evaluator($1,$2)`,[d2,U.ev]), r=>typeof r==='string' && r.includes('conflict'));
 await db.exec(`insert into public.server_keys values (1, encode(sha256('srv-test'::bytea),'hex'))`);
 const asAnon = async (sql, params=[]) => { try { await db.exec('set role anon'); return (await db.query(sql, params)).rows; } catch (e) { return 'ERR: '+e.message; } finally { await db.exec('reset role'); } };
-check('anon cannot report without server key', await asAnon(`select public.report_challenge('wrong','n1','A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null)`), r=>typeof r==='string' && r.includes('Not allowed'));
-const code = (await asAnon(`select public.report_challenge('srv-test','n1','A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null) c`))[0]?.c;
-check('server can report, gets tracking code', code, c=>/^BW-[0-9A-F]{6}$/.test(c));
+const H = (x) => x.repeat(16);
+check('report needs device and network ids', await asAnon(`select public.report_challenge('bad','bad','A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null)`), r=>typeof r==='string' && r.includes('Not allowed'));
+const code = (await asAnon(`select public.report_challenge($1,$2,'A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null) c`,[H('a1'),H('b1')]))[0]?.c;
+check('anyone can report, gets tracking code', code, c=>/^BW-[0-9A-F]{6}$/.test(c));
 check('pending not public', await asAnon(`select id from public.challenges where code=$1`,[code]), r=>Array.isArray(r) && r.length===0);
 check('tracking code works', await asAnon(`select status from public.track_challenge($1)`,[code]), r=>Array.isArray(r) && r[0].status==='pending');
 check('anon cannot insert directly', await asAnon(`insert into public.challenges (code,title,description,lat,lng) values ('X','A title here','Twenty or more characters here',-24,25)`), r=>typeof r==='string');
 check('anon cannot read photos table', await asAnon(`select * from public.challenge_photos`), r=>typeof r==='string' || r.length===0);
-for (let k=0;k<4;k++) await asAnon(`select public.report_challenge('srv-test','n1','A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null)`);
-check('report rate limit per connection', await asAnon(`select public.report_challenge('srv-test','n1','A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null)`), r=>typeof r==='string' && r.includes('Too many'));
+for (let k=0;k<2;k++) await asAnon(`select public.report_challenge($1,$2,'A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null)`,[H('a1'),H('b1')]);
+check('3 reports a day per device', await asAnon(`select public.report_challenge($1,$2,'A real problem here','Twenty or more characters of description',null,'Gaborone',-24.6,25.9,null,null)`,[H('a1'),H('b2')]), r=>typeof r==='string' && r.includes('3 reports'));
+check('pending photo hidden from public', await asAnon(`select * from public.challenge_photo((select id from public.challenges where code=$1))`,[code]), r=>Array.isArray(r) && r.length===0);
 const cid = (await db.query(`select id from public.challenges where code=$1`,[code])).rows[0].id;
 check('only admin moderates', await as('adj', `select public.moderate_challenge($1,true,false,null)`,[cid]), r=>typeof r==='string');
 check('admin approves', await as('other', `select public.moderate_challenge($1,true,false,null)`,[cid]), r=>Array.isArray(r));
 check('approved is public', await asAnon(`select id from public.challenges where code=$1`,[code]), r=>Array.isArray(r) && r.length===1);
-check('first vote counts', await asAnon(`select public.upvote_challenge('srv-test','n2','dev1',$1) n`,[cid]), r=>Array.isArray(r) && r[0].n===1);
-check('same device votes once', await asAnon(`select public.upvote_challenge('srv-test','n2','dev1',$1) n`,[cid]), r=>Array.isArray(r) && r[0].n===1);
-check('vote needs server key', await asAnon(`select public.upvote_challenge('x','n2','dev2',$1)`,[cid]), r=>typeof r==='string');
+check('first vote counts', await asAnon(`select public.upvote_challenge($2,$3,$1) n`,[cid,H('c1'),H('d1')]), r=>Array.isArray(r) && r[0].n===1);
+check('same device votes once', await asAnon(`select public.upvote_challenge($2,$3,$1) n`,[cid,H('c2'),H('d1')]), r=>Array.isArray(r) && r[0].n===1);
+check('vote needs device id', await asAnon(`select public.upvote_challenge('x','y',$1)`,[cid]), r=>typeof r==='string');
 check('innovator saves interest', await as('sub', `insert into public.interests (user_id,challenge_id,saved) values ($1,$2,true)`,[U.sub,cid]), r=>Array.isArray(r));
 check('cannot save interest for someone else', await as('sub', `insert into public.interests (user_id,challenge_id,saved) values ($1,$2,true)`,[U.ev,cid]), r=>typeof r==='string');
 check('challenge analytics for panel', (await as('adj', `select public.challenge_report() r`))[0].r.saved, n=>n===1);

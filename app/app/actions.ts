@@ -208,15 +208,3 @@ export async function moderateChallenge(_: ActionState, f: FormData): Promise<Ac
   revalidatePath('/challenges');
   return { ok: decision === 'reject' ? 'Not published.' : 'Published to the challenge map.' };
 }
-
-export async function linkServerKey(): Promise<ActionState> {
-  await requireMe('admin');
-  const key = process.env.COMMUNITY_SERVER_KEY ?? '';
-  if (key.length < 32) return { error: 'Add COMMUNITY_SERVER_KEY (at least 32 characters) in the Vercel project settings and redeploy first.' };
-  const { createHash } = await import('node:crypto');
-  const sb = await supabaseServer();
-  const { error } = await sb.rpc('set_server_key_hash', { p_hash: createHash('sha256').update(key).digest('hex') });
-  if (error) return { error: friendlyError(error) };
-  revalidatePath('/app/admin');
-  return { ok: 'Community reports and upvotes are now connected.' };
-}
