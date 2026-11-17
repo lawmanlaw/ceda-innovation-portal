@@ -14,7 +14,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <main id="main" className="auth">
       <div className="auth-photo"><img src="/img/whiteboard.webp" alt="" /></div>
       <div className="auth-form">
-        <p><Link href="/" className="brand"><span className="brand-mark"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /></span><i className="brand-rule" aria-hidden="true" /><span className="brand-name"><span>Innovation Portal</span></span></Link></p>
+        <Link href="/" className="back-home">‹ Back to home</Link>
+        <p><Link href="/" className="brand" aria-label="CEDA Innovation Portal home"><span className="brand-mark"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /></span><i className="brand-rule" aria-hidden="true" /><span className="brand-name"><span>Innovation Portal</span></span></Link></p>
         <div className="card">
           {error === 'oauth' && <p className="notice bad">That link did not work or has expired. Please try again.</p>}
           <AuthForm initialMode={mode === 'signup' ? 'signup' : 'signin'} districts={(districts ?? []).map((d) => d.name)} />

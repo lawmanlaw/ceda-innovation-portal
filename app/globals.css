@@ -820,3 +820,7 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 @media (prefers-reduced-motion: reduce) {
   .bk-seated *, .bk[data-mode="yes"] .bk-wave, .bk[data-mode="yes"] .bk-head { animation: none !important; transition: none !important; }
 }
+
+.back-home { align-self: flex-start; display: inline-flex; align-items: center; gap: .3rem; padding: .35rem .7rem; margin-bottom: .5rem; border-radius: 999px; color: var(--brand); font-weight: 600; font-size: .9rem; text-decoration: none; background: var(--brand-soft); transition: transform 200ms var(--spring), background 200ms var(--ease-out); }
+.back-home:hover { transform: translateX(-3px); background: #f3e4e4; }
+.auth-form .brand { cursor: pointer; }
