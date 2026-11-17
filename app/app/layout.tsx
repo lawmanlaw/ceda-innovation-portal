@@ -7,6 +7,7 @@ import Dock from '@/components/dock';
 import Tour from '@/components/tour';
 import Sidebar from '@/components/sidebar';
 import MenuCloser from '@/components/menu-closer';
+import Avatar from '@/components/avatar';
 
 const NAV: Record<Role, [string, string][]> = {
   submitter: [['/app', 'My ideas'], ['/app/challenges', 'Challenges'], ['/app/ideas/new', 'Submit an idea'], ['/app/chat', 'Chat with CEDA']],
@@ -27,8 +28,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLinks links={[...NAV[me.role], ['/help', 'Help']]} />
           <Notifications userId={me.id} />
           <details name="topmenu" style={{ position: 'relative' }}>
-            <summary className="btn ghost small" style={{ listStyle: 'none' }} aria-label="Account">
-              {me.full_name || me.email}
+            <summary className="btn ghost small account-btn" style={{ listStyle: 'none' }} aria-label="Account">
+              <Avatar id={me.id} name={me.full_name} v={me.photo_v} size={28} /><span>{me.full_name || me.email}</span>
             </summary>
             <div className="card" style={{ position: 'absolute', right: 0, top: '110%', width: 240, zIndex: 30 }}>
               <p className="muted" style={{ marginBottom: '.5rem' }}>{ROLE_LABEL[me.role]}</p>
