@@ -1,3 +1,4 @@
+import EyeTracker from '@/components/eye-tracker';
 import type { Metadata, Viewport } from 'next';
 import '@fontsource/saira/400.css';
 import '@fontsource/saira/600.css';
@@ -22,6 +23,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <a href="#main" className="skip">Skip to content</a>
         {children}
+        <EyeTracker />
         <Safe label="Live chat"><ChatWidget userId={me?.id ?? null} hide={me?.role === 'agent'} /></Safe>
         <footer className="wrap muted" style={{ padding: '1.5rem 0 2rem', fontSize: '.85rem' }}>
           <Link href="/help#privacy">Privacy</Link> · <Link href="/help#support">Support</Link>

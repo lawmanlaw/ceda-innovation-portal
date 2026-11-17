@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Icon, { type IconName } from '@/components/icon';
-import Bokamoso from '@/components/bokamoso';
+import BokamosoSeated from '@/components/bokamoso-seated';
 
 const ICONS: Record<string, IconName> = {
   '/app': 'home', '/app/challenges': 'bulb', '/app/ideas/new': 'plus', '/app/chat': 'chat', '/app/ideas': 'list',
@@ -21,7 +21,7 @@ export default function Sidebar({ links, helpHref }: { links: [string, string][]
         ))}
       </nav>
       <div className="side-help">
-        <Bokamoso mode="wave" size={84} />
+        <BokamosoSeated size={150} />
         <strong>Need a hand?</strong>
         <span>I&apos;m Bokamoso. Ask a CEDA consultant anything.</span>
         <Link href={helpHref} className="btn small">Get help ›</Link>

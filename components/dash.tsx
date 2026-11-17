@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Icon, { type IconName } from '@/components/icon';
+import CountUp from '@/components/count-up';
 
 // Building blocks for the dashboards: coloured tiles with a progress ring, stat tiles,
 // a weekly activity chart and a "next steps" list.
@@ -31,7 +32,7 @@ export function Tile({ href, title, sub, pct, icon, t }: { href: string; title: 
 }
 
 export function Stat({ label, value }: { label: string; value: number | string }) {
-  return <div className="dstat"><span>{label}</span><strong><i aria-hidden="true" />{typeof value === 'number' && value < 10 ? `0${value}` : value}</strong></div>;
+  return <div className="dstat"><span>{label}</span><strong><i aria-hidden="true" />{typeof value === 'number' ? <CountUp value={value} /> : value}</strong></div>;
 }
 
 // Seven bars for the last seven days, today on the right

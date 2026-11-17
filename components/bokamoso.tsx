@@ -12,9 +12,6 @@ export default function Bokamoso({ mode = 'idle', look = 0, size = 96 }: { mode?
   const clip = useId();
   const lx = mode === 'watch' ? Math.max(-1, Math.min(1, look)) * 4 : 0;
   const ly = mode === 'watch' ? 3 : 0;
-  const mouth = mode === 'yes' || mode === 'wave'
-    ? <path d="M86 109 Q100 126 114 109 Z" fill="#fff" stroke={HAIR} strokeWidth="2" strokeLinejoin="round" />
-    : <path d={mode === 'no' ? 'M90 116 Q100 109 110 116' : 'M89 111 Q100 120 111 111'} fill="none" stroke={HAIR} strokeWidth="2.5" strokeLinecap="round" />;
   return (
     <svg className="bk" data-mode={mode} viewBox="0 0 200 200" width={size} height={size} aria-hidden="true" focusable="false">
       <defs><clipPath id={clip}><circle cx="100" cy="100" r="100" /></clipPath></defs>
@@ -29,31 +26,7 @@ export default function Bokamoso({ mode = 'idle', look = 0, size = 96 }: { mode?
         <rect x="88" y="118" width="24" height="32" fill={SHADE} />
         <path d="M82 140 L100 162 L118 140 L112 136 L100 150 L88 136 Z" fill="#d2561f" />
         <image href="/ceda-mark.png" x="120" y="164" width="27" height="14" />
-        <g className="bk-head">
-          <circle cx="62" cy="90" r="7" fill={SKIN} />
-          <circle cx="138" cy="90" r="7" fill={SKIN} />
-          <ellipse cx="100" cy="86" rx="38" ry="44" fill={SKIN} />
-          {/* Short curly hair */}
-          <ellipse cx="100" cy="53" rx="36" ry="16" fill={HAIR} />
-          {[[66, 60], [75, 49], [88, 43], [100, 41], [112, 43], [125, 49], [134, 60]].map(([x, y]) => <circle key={x} cx={x} cy={y} r="10" fill={HAIR} />)}
-          <path d="M76 74 Q84 70 92 74 M108 74 Q116 70 124 74" fill="none" stroke={HAIR} strokeWidth="3" strokeLinecap="round" />
-          <g className="bk-eyes">
-            <ellipse cx="84" cy="88" rx="8" ry="7" fill="#fff" />
-            <ellipse cx="116" cy="88" rx="8" ry="7" fill="#fff" />
-            <g className="bk-pupils" style={{ transform: `translate(${lx}px, ${ly}px)` }}>
-              <circle cx="84" cy="88" r="3.6" fill={HAIR} />
-              <circle cx="116" cy="88" r="3.6" fill={HAIR} />
-            </g>
-          </g>
-          {/* Glasses */}
-          <g fill="none" stroke={HAIR} strokeWidth="2.5">
-            <rect x="71" y="77" width="26" height="22" rx="7" />
-            <rect x="103" y="77" width="26" height="22" rx="7" />
-            <path d="M97 86 H103 M71 86 L63 84 M129 86 L137 84" />
-          </g>
-          <path d="M100 96 Q96 104 101 105" fill="none" stroke={SHADE} strokeWidth="2.5" strokeLinecap="round" />
-          {mouth}
-        </g>
+        <BkHead mode={mode} lx={lx} ly={ly} />
         {/* Hands that cover his eyes on password boxes */}
         <g className="bk-hand">
           <rect x="70" y="98" width="24" height="110" fill={SKIN} />
@@ -79,5 +52,40 @@ export default function Bokamoso({ mode = 'idle', look = 0, size = 96 }: { mode?
         </g>
       </g>
     </svg>
+  );
+}
+
+// Head, face and glasses, shared by the bust and the seated figure. Pupils follow the
+// pointer through --ex/--ey (set by EyeTracker) unless a mode drives them directly.
+export function BkHead({ mode, lx = 0, ly = 0 }: { mode: BkMode; lx?: number; ly?: number }) {
+  const mouth = mode === 'yes' || mode === 'wave'
+    ? <path d="M86 109 Q100 126 114 109 Z" fill="#fff" stroke={HAIR} strokeWidth="2" strokeLinejoin="round" />
+    : <path d={mode === 'no' ? 'M90 116 Q100 109 110 116' : 'M89 111 Q100 120 111 111'} fill="none" stroke={HAIR} strokeWidth="2.5" strokeLinecap="round" />;
+  return (
+        <g className="bk-head">
+        <circle cx="62" cy="90" r="7" fill={SKIN} />
+        <circle cx="138" cy="90" r="7" fill={SKIN} />
+        <ellipse cx="100" cy="86" rx="38" ry="44" fill={SKIN} />
+        {/* Short curly hair */}
+        <ellipse cx="100" cy="53" rx="36" ry="16" fill={HAIR} />
+        {[[66, 60], [75, 49], [88, 43], [100, 41], [112, 43], [125, 49], [134, 60]].map(([x, y]) => <circle key={x} cx={x} cy={y} r="10" fill={HAIR} />)}
+        <path d="M76 74 Q84 70 92 74 M108 74 Q116 70 124 74" fill="none" stroke={HAIR} strokeWidth="3" strokeLinecap="round" />
+        <g className="bk-eyes">
+          <ellipse cx="84" cy="88" rx="8" ry="7" fill="#fff" />
+          <ellipse cx="116" cy="88" rx="8" ry="7" fill="#fff" />
+          <g className="bk-pupils" style={mode === 'watch' ? { transform: `translate(${lx}px, ${ly}px)` } : undefined}>
+            <circle cx="84" cy="88" r="3.6" fill={HAIR} />
+            <circle cx="116" cy="88" r="3.6" fill={HAIR} />
+          </g>
+        </g>
+        {/* Glasses */}
+        <g fill="none" stroke={HAIR} strokeWidth="2.5">
+          <rect x="71" y="77" width="26" height="22" rx="7" />
+          <rect x="103" y="77" width="26" height="22" rx="7" />
+          <path d="M97 86 H103 M71 86 L63 84 M129 86 L137 84" />
+        </g>
+        <path d="M100 96 Q96 104 101 105" fill="none" stroke={SHADE} strokeWidth="2.5" strokeLinecap="round" />
+        {mouth}
+      </g>
   );
 }

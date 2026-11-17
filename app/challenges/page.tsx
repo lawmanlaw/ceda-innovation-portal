@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import PublicHeader from '@/components/public-header';
 import Upvote from '@/components/upvote';
+import SectorArt from '@/components/sector-art';
 import { supabaseServer } from '@/lib/supabase/server';
 import { MAP_W, MAP_H, REGIONS } from '@/lib/bw-map';
 import { project } from '@/lib/geo';
@@ -34,10 +35,10 @@ export default async function Challenges({ searchParams }: { searchParams: Promi
             {district && <p><Link href="/challenges">Show all districts</Link></p>}
           </section>
           <div className="stack">
-            {!list.length && <p className="card muted">No challenges here yet. Be the first to report one.</p>}
+            {!list.length && <div className="card empty-deck"><SectorArt sector="other" className="empty-art" /><p>No challenges here yet. Be the first to report one.</p></div>}
             {list.map((c) => (
               <article key={c.id} id={c.code} className="card ch-card">
-                {c.has_photo && <img src={`/challenges/photo/${c.id}`} alt="" loading="lazy" className="ch-photo" />}
+                {c.has_photo ? <img src={`/challenges/photo/${c.id}`} alt="" loading="lazy" className="ch-photo" /> : <SectorArt sector={c.sector} className="ch-photo" />}
                 <div>
                   <h2>{c.title}</h2>
                   <p className="muted" style={{ margin: '0 0 .4rem' }}>{[c.sector, c.district && <Link key="d" href={`/challenges?district=${encodeURIComponent(c.district)}`}>{c.district}</Link>].filter(Boolean).map((x, i) => <span key={i}>{i ? ' · ' : ''}{x}</span>)}</p>
