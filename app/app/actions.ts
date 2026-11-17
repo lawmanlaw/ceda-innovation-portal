@@ -208,3 +208,22 @@ export async function moderateChallenge(_: ActionState, f: FormData): Promise<Ac
   revalidatePath('/challenges');
   return { ok: decision === 'reject' ? 'Not published.' : 'Published to the challenge map.' };
 }
+
+export async function setProfilePhoto(_: ActionState, f: FormData): Promise<ActionState> {
+  const me = await requireMe();
+  const sb = await supabaseServer();
+  if (f.get('remove')) {
+    await sb.from('profile_photos').delete().eq('user_id', me.id);
+  } else {
+    const file = f.get('photo');
+    if (!(file instanceof File) || !file.size) return { error: 'Choose a photo first.' };
+    const { cleanAvatar } = await import('@/lib/community');
+    const clean = await cleanAvatar(file);
+    if (!clean.ok) return { error: clean.reason };
+    const { error } = await sb.from('profile_photos').upsert({ user_id: me.id, data: `\\x${clean.data.toString('hex')}`, updated_at: new Date().toISOString() });
+    if (error) return { error: friendlyError(error) };
+  }
+  await sb.rpc('bump_photo');
+  revalidatePath('/app', 'layout');
+  return { ok: f.get('remove') ? 'Photo removed.' : 'Photo saved.' };
+}

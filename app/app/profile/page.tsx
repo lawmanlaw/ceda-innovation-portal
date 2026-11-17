@@ -2,6 +2,7 @@ import { requireMe, supabaseServer } from '@/lib/supabase/server';
 import ActionForm from '@/components/action-form';
 import { updateProfile } from '@/app/app/actions';
 import DeleteAccount from './delete-account';
+import PhotoForm from './photo-form';
 
 export const metadata = { title: 'Profile and alerts' };
 
@@ -12,6 +13,7 @@ export default async function Profile() {
   return (
     <div className="stack" style={{ maxWidth: 620 }}>
       <h1>Profile and alerts</h1>
+      <PhotoForm id={me.id} name={me.full_name} v={me.photo_v ?? 0} />
       <p><a href="/reset-password">Change my password</a></p>
       <div className="card">
         <ActionForm action={updateProfile} submit="Save">

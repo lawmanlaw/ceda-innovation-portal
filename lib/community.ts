@@ -63,3 +63,18 @@ export async function cleanPhoto(file: File | null): Promise<{ ok: true; data: B
     return { ok: false, reason: 'That photo could not be read. Try another one.' };
   }
 }
+
+// Profile photo: real image check, then a 256px square crop re-encoded to WEBP (drops all metadata)
+export async function cleanAvatar(file: File): Promise<{ ok: true; data: Buffer } | { ok: false; reason: string }> {
+  if (file.size > 8 * 1024 * 1024) return { ok: false, reason: 'Photos can be up to 8 MB.' };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const verdict = scanFile(file.name || 'photo.jpg', bytes);
+  if (!verdict.ok) return { ok: false, reason: verdict.reason };
+  if (!['png', 'jpg', 'webp'].includes(verdict.kind)) return { ok: false, reason: 'Use a JPG, PNG or WEBP photo.' };
+  try {
+    const data = await sharp(bytes, { limitInputPixels: 40_000_000 }).rotate().resize(256, 256, { fit: 'cover', position: 'attention' }).webp({ quality: 80 }).toBuffer();
+    return { ok: true, data };
+  } catch {
+    return { ok: false, reason: 'That photo could not be read. Try another one.' };
+  }
+}

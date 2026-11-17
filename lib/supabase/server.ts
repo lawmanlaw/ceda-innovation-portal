@@ -22,6 +22,7 @@ export async function supabaseServer() {
 }
 
 export type Me = {
+  photo_v: number;
   id: string;
   email: string | null;
   full_name: string;
@@ -40,7 +41,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
   if (!data.user) return null;
   const { data: p } = await sb
     .from('profiles')
-    .select('id, email, full_name, role, district, organisation, phone, alerts_email, alerts_in_app')
+    .select('id, email, full_name, role, district, organisation, phone, alerts_email, alerts_in_app, photo_v')
     .eq('id', data.user.id)
     .single();
   return (p as Me) ?? null;

@@ -824,3 +824,15 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 .back-home { align-self: flex-start; display: inline-flex; align-items: center; gap: .3rem; padding: .35rem .7rem; margin-bottom: .5rem; border-radius: 999px; color: var(--brand); font-weight: 600; font-size: .9rem; text-decoration: none; background: var(--brand-soft); transition: transform 200ms var(--spring), background 200ms var(--ease-out); }
 .back-home:hover { transform: translateX(-3px); background: #f3e4e4; }
 .auth-form .brand { cursor: pointer; }
+
+/* Profile photos */
+.avatar { border-radius: 50%; object-fit: cover; flex: none; display: inline-grid; place-items: center; }
+.avatar.initials { background: var(--brand); color: #fff; font-weight: 700; }
+.account-btn { display: inline-flex; align-items: center; gap: .5rem; padding-left: .3rem; }
+.photo-form { display: flex; align-items: center; gap: 1.2rem; }
+.photo-pick { position: relative; cursor: pointer; border-radius: 50%; flex: none; transition: transform 220ms var(--spring); }
+.photo-pick:hover { transform: scale(1.04); }
+.photo-pick .avatar { box-shadow: 0 0 0 4px #fff, 0 6px 18px rgb(63 44 36 / .2); }
+.photo-edit { position: absolute; inset: auto 0 0; margin: auto; width: max-content; padding: .15rem .55rem; border-radius: 999px; background: rgb(63 44 36 / .8); color: #fff; font-size: .75rem; font-weight: 600; transform: translateY(40%); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 520px) { .account-btn span { display: none; } .photo-form { flex-direction: column; text-align: center; } }
