@@ -2,7 +2,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase/server';
-import { cleanPhoto, deviceKey, humanOk, netKey, serverKey } from '@/lib/community';
+import { cleanPhoto, deviceKey, humanOk, netKey } from '@/lib/community';
 import { locationFacts } from '@/lib/geo';
 
 export type ReportState = { error?: string; code?: string };
@@ -16,7 +16,6 @@ const Report = z.object({
 });
 
 export async function reportChallenge(_: ReportState, f: FormData): Promise<ReportState> {
-  if (!serverKey()) return { error: 'Community reports open very soon. Please try again later.' };
   if (!(await humanOk(f.get('cf-turnstile-response')))) return { error: 'We could not confirm you are a person. Please try again.' };
   if (!f.get('lat')) return { error: 'Drop a pin on the map to show where the problem is.' };
   const p = Report.safeParse({ title: f.get('title'), description: f.get('description'), sector: f.get('sector') || undefined, lat: f.get('lat'), lng: f.get('lng') });
@@ -25,7 +24,7 @@ export async function reportChallenge(_: ReportState, f: FormData): Promise<Repo
   if (!photo.ok) return { error: photo.reason };
   const sb = await supabaseServer();
   const { data, error } = await sb.rpc('report_challenge', {
-    p_server: serverKey(), p_net: await netKey(), p_title: p.data.title, p_description: p.data.description,
+    p_device: await deviceKey(), p_net: await netKey(), p_title: p.data.title, p_description: p.data.description,
     p_sector: p.data.sector ?? null, p_district: locationFacts(p.data.lat, p.data.lng)?.district ?? null,
     p_lat: p.data.lat, p_lng: p.data.lng,
     p_photo: photo.data ? `\\x${photo.data.toString('hex')}` : null, p_mime: photo.data ? 'image/webp' : null,
@@ -36,9 +35,8 @@ export async function reportChallenge(_: ReportState, f: FormData): Promise<Repo
 
 export async function upvote(id: string): Promise<{ n?: number; error?: string }> {
   if (!/^[0-9a-f-]{36}$/.test(id)) return { error: 'Not found.' };
-  if (!serverKey()) return { error: 'Voting opens very soon.' };
   const sb = await supabaseServer();
-  const { data, error } = await sb.rpc('upvote_challenge', { p_server: serverKey(), p_net: await netKey(), p_device: await deviceKey(), p_challenge: id });
+  const { data, error } = await sb.rpc('upvote_challenge', { p_net: await netKey(), p_device: await deviceKey(), p_challenge: id });
   if (error) return { error: error.code === '54000' ? error.message : 'Your vote did not go through.' };
   revalidatePath('/challenges');
   return { n: data as number };

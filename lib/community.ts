@@ -6,9 +6,10 @@ import { scanFile } from '@/lib/file-scan';
 
 // Server-side guards for the no-login community features.
 
-export const serverKey = () => process.env.COMMUNITY_SERVER_KEY ?? '';
+// Pepper for hashing device and network ids; works without it, stronger with it
+const pepper = () => process.env.COMMUNITY_SERVER_KEY ?? 'ceda-portal';
 
-const hash = (s: string) => createHash('sha256').update(`${serverKey()}:${s}`).digest('hex').slice(0, 32);
+const hash = (s: string) => createHash('sha256').update(`${pepper()}:${s}`).digest('hex').slice(0, 32);
 
 // The caller's network, hashed so no IP address is ever stored
 export async function netKey() {

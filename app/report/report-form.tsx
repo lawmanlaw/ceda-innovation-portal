@@ -86,7 +86,7 @@ export default function ReportForm({ siteKey }: { siteKey: string | null }) {
         {preview && <img src={preview} alt="Your photo" className="photo-preview" />}
       </div>
       {siteKey && <div ref={tsRef} className="cf-turnstile" data-sitekey={siteKey} data-size="flexible" />}
-      <p className="muted" style={{ fontSize: '.85rem' }}>No account needed. We do not ask for your name. See the <a href="/help#privacy">privacy notice</a>.</p>
+      <p className="muted" style={{ fontSize: '.85rem' }}>No account needed and we do not ask for your name. You can send up to 3 reports a day. See the <a href="/help#privacy">privacy notice</a>.</p>
       <button className="btn" disabled={busy} aria-busy={busy}>{busy ? 'Sending...' : 'Send report'}</button>
     </form>
   );
