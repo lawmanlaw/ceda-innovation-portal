@@ -15,7 +15,7 @@ create function extensions.digest(t text, a text) returns bytea language sql imm
 create function extensions.gen_random_bytes(n int) returns bytea language sql volatile as $$ select decode(substr(md5(random()::text)||md5(random()::text),1,n*2),'hex') $$;
 grant usage on schema public, auth, storage, extensions to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql','0016_profile_photos.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql','0016_profile_photos.sql','0017_avatar_choice.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','').replace('create extension if not exists pgcrypto with schema extensions;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
