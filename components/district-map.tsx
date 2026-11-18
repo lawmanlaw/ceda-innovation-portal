@@ -124,7 +124,7 @@ export function DistrictMap({ stats, selected, pins = [] }: { stats: DistrictSta
           <div className={`dmap-tip${flip ? ' flip' : ''}`} style={{ left: tip.x, top: tip.y }} role="status">
             <strong>{tip.name}</strong>
             <span className="dmap-total">{s?.total ?? 0} {(s?.total ?? 0) === 1 ? 'idea' : 'ideas'}</span>
-            {pop ? <span className="dmap-pop">{rate(s?.total ?? 0, tip.name).toFixed(2)} per 10,000 people · population {pop.toLocaleString('en-GB')} (2011)</span> : null}
+            {pop ? <span className="dmap-pop">{rate(s?.total ?? 0, tip.name).toFixed(2)} per 10,000 people · population {pop.toLocaleString('en-GB')} (2022)</span> : null}
             {s && s.total > 0 && (
               <ul>
                 {(Object.keys(STAGE_LABEL) as Stage[]).filter((k) => s.stages[k]).map((k) => (
