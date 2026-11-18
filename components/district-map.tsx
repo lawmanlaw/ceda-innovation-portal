@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { MAP_W, MAP_H, REGIONS, TOWNS } from '@/lib/bw-map';
@@ -21,6 +21,9 @@ const POP: Record<string, number> = Object.fromEntries([...REGIONS, ...TOWNS].ma
 const rate = (n: number, name: string) => (POP[name] ? (n / POP[name]) * 10000 : 0);
 
 export function DistrictMap({ stats, selected, pins = [] }: { stats: DistrictStats; selected?: string; pins?: Pin[] }) {
+  const [open, setOpen] = useState(true);
+  useEffect(() => { try { if (localStorage.getItem('dmap-hidden') === '1') setOpen(false); } catch { /* fine */ } }, []);
+  const toggle = () => { setOpen((o) => { try { localStorage.setItem('dmap-hidden', o ? '1' : '0'); } catch { /* fine */ } return !o; }); };
   const [metric, setMetric] = useState<'count' | 'rate'>('count');
   const [showPins, setShowPins] = useState(true);
   const value = (name: string) => { const n = stats[name]?.total ?? 0; return metric === 'count' ? n : rate(n, name); };
@@ -76,18 +79,19 @@ export function DistrictMap({ stats, selected, pins = [] }: { stats: DistrictSta
     <div className="dmap card">
       <div className="dmap-head">
         <h2>Ideas by district</h2>
-        <div className="row" style={{ gap: '.5rem' }}>
+        <button type="button" className="btn ghost small" onClick={toggle} aria-expanded={open}>{open ? 'Hide map' : 'Show map'}</button>
+        {open && <div className="row" style={{ gap: '.5rem' }}>
           <div className="seg" role="group" aria-label="Colour districts by">
             <button type="button" aria-pressed={metric === 'count'} onClick={() => setMetric('count')}>Number of ideas</button>
             <button type="button" aria-pressed={metric === 'rate'} onClick={() => setMetric('rate')}>Per 10,000 people</button>
           </div>
           {pins.length > 0 && <label className="row consent" style={{ fontSize: '.85rem' }}><input type="checkbox" checked={showPins} onChange={(e) => setShowPins(e.target.checked)} /><span>Pins</span></label>}
-        </div>
-        <div className="dmap-legend" aria-hidden="true">
+        </div>}
+        {open && <div className="dmap-legend" aria-hidden="true">
           <span>Fewer</span>{STEPS.map((c) => <i key={c} style={{ background: c }} />)}<span>More</span>
-        </div>
+        </div>}
       </div>
-      <div className="dmap-box" ref={box} onPointerDown={(e) => { if (e.target === e.currentTarget) setTip(null); }}>
+      {open && <div className="dmap-box" ref={box} onPointerDown={(e) => { if (e.target === e.currentTarget) setTip(null); }}>
         <svg viewBox={`-6 -6 ${MAP_W + 12} ${MAP_H + 12}`} role="group" aria-label="Map of Botswana districts. Choose a district to filter the ideas below.">
           {REGIONS.map((r) => (
             <path key={r.name} d={r.d} fill={STEPS[step(value(r.name), max)]}
@@ -133,7 +137,7 @@ export function DistrictMap({ stats, selected, pins = [] }: { stats: DistrictSta
               : <small>{selected === tip.name ? 'Click to show all districts' : 'Click to filter the table'}</small>}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
