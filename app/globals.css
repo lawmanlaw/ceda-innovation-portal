@@ -890,3 +890,4 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 .award-hero p { margin: 0; color: var(--ink-2); }
 @keyframes award-in { from { opacity: 0; transform: translateY(8px); } }
 @media (max-width: 520px) { .award-hero { flex-direction: column; text-align: center; } }
+.delete-box { border-left: 3px solid #c62828; }

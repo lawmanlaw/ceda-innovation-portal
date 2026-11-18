@@ -285,3 +285,18 @@ export async function toggleMilestone(ideaId: string, milestoneId: string, done:
   revalidatePath(`/app/ideas/${ideaId}`);
   return { ok: done ? 'Step done.' : 'Step reopened.' };
 }
+
+// Innovators delete one of their own ideas for good: files first, then the idea and everything tied to it
+export async function deleteIdea(_: ActionState, f: FormData): Promise<ActionState> {
+  await requireMe('submitter');
+  const id = uuid.safeParse(f.get('idea_id'));
+  if (!id.success) return { error: 'Not found.' };
+  if (String(f.get('confirm') ?? '').trim().toUpperCase() !== 'DELETE') return { error: 'Type DELETE to confirm.' };
+  const sb = await supabaseServer();
+  const { data: files } = await sb.from('attachments').select('storage_path').eq('idea_id', id.data);
+  if (files?.length) await sb.storage.from('idea-files').remove(files.map((x) => x.storage_path));
+  const { error } = await sb.rpc('delete_my_idea', { p_idea: id.data });
+  if (error) return { error: friendlyError(error) };
+  revalidatePath('/app');
+  redirect('/app?deleted=1');
+}

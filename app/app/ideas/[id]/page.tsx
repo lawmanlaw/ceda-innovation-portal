@@ -9,6 +9,7 @@ import { STAGE_LABEL, type Idea, type Stage, type FormField } from '@/lib/types'
 import { fmtDate } from '@/lib/util';
 import { locationFacts, project } from '@/lib/geo';
 import DecisionPanel from './decision-panel';
+import DeleteIdea from './delete-idea';
 import { Milestones, type Milestone } from './project-space';
 import { MAP_W, MAP_H, REGIONS } from '@/lib/bw-map';
 import {
@@ -364,6 +365,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
               <button className="btn danger small">Withdraw {idea.ref}</button>
             </form>
           )}
+          {isOwner && <DeleteIdea ideaId={id} ref_={idea.ref ?? 'this idea'} />}
         </aside>
       </div>
     </div>
