@@ -13,7 +13,7 @@ const hello = (name: string | null | undefined) => {
   const h = Number(new Date().toLocaleString('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Africa/Gaborone' }));
   return `${h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'}${name ? `, ${name.split(' ')[0]}` : ''}`;
 };
-const STAGE_PCT: Record<string, number> = { submitted: 20, in_review: 45, feedback: 45, approved: 80, awarded: 100, rejected: 100, withdrawn: 100 };
+const STAGE_PCT: Record<string, number> = { submitted: 20, in_review: 45, feedback: 45, approved: 80, awarded: 100, rejected: 0, withdrawn: 0 };
 const STAGE_ICON: Record<string, IconName> = { submitted: 'send', in_review: 'review', feedback: 'chat', approved: 'check', awarded: 'award', rejected: 'list', withdrawn: 'list' };
 
 type QRow = { id: string; title: string; ref: string | null; district: string; done: number; total: number; pct: number | null; tag?: string };
@@ -66,6 +66,15 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <div className="dash-main">
           <p className="dash-hello">{hello(me.full_name)}, welcome back</p>
           <div className="row between"><h1>My ideas</h1><Link className="btn small" href="/app/ideas/new">Submit an idea</Link></div>
+          {ideas.filter((i) => i.stage === 'awarded').slice(0, 1).map((i) => (
+            <Link key={i.id} href={`/app/ideas/${i.id}`} className="award-hero">
+              <BokamosoSeated size={120} pose="jump" />
+              <div>
+                <h2>Congratulations, {i.title} has been awarded</h2>
+                <p>CEDA is taking your idea forward. Open it to see your next steps and share progress with your panel.</p>
+              </div>
+            </Link>
+          ))}
           <div className="dtiles">
             {ideas.slice(0, 4).map((i, k) => (
               <Tile key={i.id} href={`/app/ideas/${i.id}`} title={i.title} sub={`${i.ref} · ${STAGE_LABEL[i.stage as Stage]}`} pct={STAGE_PCT[i.stage] ?? 0} icon={STAGE_ICON[i.stage] ?? 'bulb'} t={tone(k)} />

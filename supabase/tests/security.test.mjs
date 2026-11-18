@@ -15,7 +15,7 @@ create function extensions.digest(t text, a text) returns bytea language sql imm
 create function extensions.gen_random_bytes(n int) returns bytea language sql volatile as $$ select decode(substr(md5(random()::text)||md5(random()::text),1,n*2),'hex') $$;
 grant usage on schema public, auth, storage, extensions to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql','0016_profile_photos.sql','0017_avatar_choice.sql','0018_security_cleanup.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql','0016_profile_photos.sql','0017_avatar_choice.sql','0018_security_cleanup.sql','0019_award_tracking.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','').replace('create extension if not exists pgcrypto with schema extensions;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -154,6 +154,15 @@ check('staff can see innovator photo', await as('ev', `select user_id from publi
 await db.exec(`insert into auth.users(id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-000000000009','sub2@x.bw','{"full_name":"sub2"}')`);
 U.sub2='00000000-0000-0000-0000-000000000009';
 check('innovators cannot see others photos', await as('sub2', `select user_id from public.profile_photos where user_id=$1`,[U.sub]), r=>Array.isArray(r) && r.length===0);
+const aw = (await db.query(`select id from public.ideas where stage<>'draft' and owner_id=$1 limit 1`,[U.sub])).rows[0].id;
+await db.exec(`update public.ideas set stage='awarded' where id='${aw}'`);
+check('adjudicator adds next step', await as('adj', `insert into public.milestones (idea_id,title,created_by) values ($1,'Register the company with CIPA',$2)`,[aw,U.adj]), r=>Array.isArray(r));
+check('innovator cannot add next steps', await as('sub', `insert into public.milestones (idea_id,title,created_by) values ($1,'Self-made step',$2)`,[aw,U.sub]), r=>typeof r==='string');
+check('innovator ticks a step', await as('sub', `select public.toggle_milestone((select id from public.milestones where idea_id=$1 limit 1), true)`,[aw]), r=>Array.isArray(r));
+check('outsider cannot tick a step', await as('sub2', `select public.toggle_milestone((select id from public.milestones where idea_id=$1 limit 1), true)`,[aw]), r=>typeof r==='string');
+check('innovator posts project update', await as('sub', `insert into public.project_updates (idea_id,author_id,body) values ($1,$2,'Company registered')`,[aw,U.sub]), r=>Array.isArray(r));
+check('adjudicator sees project update', await as('adj', `select body from public.project_updates where idea_id=$1`,[aw]), r=>Array.isArray(r) && r.length===1);
+check('other innovator cannot see project', await as('sub2', `select body from public.project_updates where idea_id=$1`,[aw]), r=>Array.isArray(r) && r.length===0);
 check('staff cannot self-delete', await as('ev', `select public.delete_my_account()`), r=>typeof r==='string' && r.includes('administrator'));
 check('innovator deletes account', await as('sub', `select public.delete_my_account()`), r=>Array.isArray(r));
 check('account and ideas gone', (await db.query(`select (select count(*) from auth.users where id=$1)::int u, (select count(*) from public.ideas where owner_id=$1)::int i`,[U.sub])).rows[0], r=>r.u===0 && r.i===0);

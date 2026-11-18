@@ -238,3 +238,50 @@ export async function setAvatar(name: string | null): Promise<ActionState> {
   revalidatePath('/app', 'layout');
   return { ok: 'Avatar saved.' };
 }
+
+// Decisions with next steps: awarding can carry a list of milestones the innovator works through
+export async function decideIdea(_: ActionState, f: FormData): Promise<ActionState> {
+  const me = await requireMe('adjudicator', 'admin');
+  const id = uuid.safeParse(f.get('idea_id'));
+  const to = z.enum(['in_review', 'feedback', 'approved', 'awarded', 'rejected']).safeParse(f.get('to'));
+  if (!id.success || !to.success) return { error: 'Choose a decision.' };
+  const note = String(f.get('note') ?? '').trim().slice(0, 2000);
+  if ((to.data === 'feedback' || to.data === 'rejected') && note.length < 5) return { error: 'Tell the innovator why, so they know what to do next.' };
+  const sb = await supabaseServer();
+  const { error } = await sb.rpc('move_idea', { p_idea: id.data, p_to: to.data, p_note: note });
+  if (error) return { error: friendlyError(error) };
+  if (to.data === 'awarded' || to.data === 'approved') {
+    const titles = f.getAll('step_title').map((x) => String(x).trim().slice(0, 200));
+    const dues = f.getAll('step_due').map((x) => String(x));
+    const steps = titles.map((t, i) => ({ idea_id: id.data, title: t, due_date: /^\d{4}-\d{2}-\d{2}$/.test(dues[i] ?? '') ? dues[i] : null, sort: i, created_by: me.id })).filter((s) => s.title.length >= 3);
+    if (steps.length) {
+      const { error: e2 } = await sb.from('milestones').insert(steps);
+      if (e2) return { error: friendlyError(e2) };
+    }
+  }
+  revalidatePath(`/app/ideas/${id.data}`);
+  return { ok: 'Saved. The innovator has been notified.' };
+}
+
+export async function postProjectUpdate(_: ActionState, f: FormData): Promise<ActionState> {
+  const me = await requireMe();
+  const id = uuid.safeParse(f.get('idea_id'));
+  const body = z.string().trim().min(1, 'Write an update first.').max(2000).safeParse(f.get('body') ?? '');
+  if (!id.success) return { error: 'Not found.' };
+  if (!body.success) return { error: body.error.issues[0].message };
+  const sb = await supabaseServer();
+  const { error } = await sb.from('project_updates').insert({ idea_id: id.data, author_id: me.id, body: body.data });
+  if (error) return { error: friendlyError(error) };
+  revalidatePath(`/app/ideas/${id.data}`);
+  return { ok: 'Update shared.' };
+}
+
+export async function toggleMilestone(ideaId: string, milestoneId: string, done: boolean): Promise<ActionState> {
+  await requireMe();
+  if (!uuid.safeParse(milestoneId).success) return { error: 'Not found.' };
+  const sb = await supabaseServer();
+  const { error } = await sb.rpc('toggle_milestone', { p_id: milestoneId, p_done: done });
+  if (error) return { error: friendlyError(error) };
+  revalidatePath(`/app/ideas/${ideaId}`);
+  return { ok: done ? 'Step done.' : 'Step reopened.' };
+}

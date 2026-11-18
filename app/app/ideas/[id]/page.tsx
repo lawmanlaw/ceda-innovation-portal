@@ -8,20 +8,17 @@ import Uploader from '@/components/uploader';
 import { STAGE_LABEL, type Idea, type Stage, type FormField } from '@/lib/types';
 import { fmtDate } from '@/lib/util';
 import { locationFacts, project } from '@/lib/geo';
+import DecisionPanel from './decision-panel';
+import { Milestones, type Milestone } from './project-space';
 import { MAP_W, MAP_H, REGIONS } from '@/lib/bw-map';
 import {
-  assignEvaluator, declareConflict, moveIdea, postFeedback, removeAttachment, saveScores, unassignEvaluator, withdrawIdea,
+  assignEvaluator, declareConflict, postFeedback, postProjectUpdate, removeAttachment, saveScores, unassignEvaluator, withdrawIdea,
 } from '@/app/app/actions';
 
 const SCORE_WORDS = ['Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
 
 export const metadata = { title: 'Idea' };
 
-const DECISIONS: Partial<Record<Stage, { to: Stage; label: string }[]>> = {
-  submitted: [{ to: 'in_review', label: 'Start review' }, { to: 'rejected', label: 'Decline' }],
-  in_review: [{ to: 'approved', label: 'Approve' }, { to: 'feedback', label: 'Return with feedback' }, { to: 'rejected', label: 'Decline' }],
-  approved: [{ to: 'awarded', label: 'Mark as awarded' }],
-};
 
 export default async function IdeaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string }> }) {
   const { id } = await params;
@@ -79,6 +76,17 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
   type Similar = { id: string; ref: string; title: string; district: string; km: number; connect_ok: boolean };
   const similar: Similar[] | null = staff && idea.lat != null ? ((await sb.rpc('similar_ideas', { p_idea: id })).data as Similar[] | null) : null;
 
+  const inProjectStage = idea.stage === 'approved' || idea.stage === 'awarded';
+  const [{ data: msData }, { data: updData }, { data: inProj }] = inProjectStage
+    ? await Promise.all([
+        sb.from('milestones').select('id, title, due_date, done_at').eq('idea_id', id).order('sort'),
+        sb.from('project_updates').select('id, author_id, body, created_at, profiles(full_name, role)').eq('idea_id', id).order('created_at'),
+        sb.rpc('in_project', { p_idea: id }),
+      ])
+    : [{ data: null }, { data: null }, { data: false }];
+  const milestones = (msData ?? []) as Milestone[];
+  const updates = (updData ?? []) as unknown as { id: string; author_id: string; body: string; created_at: string; profiles: { full_name: string | null; role: string } | null }[];
+
   const canScore = me.role === 'evaluator' && !!myAssignment && !myAssignment.submitted_at && idea.stage === 'in_review';
   let criteria: { id: string; name: string; description: string | null; max_score: number; weight: number }[] = [];
   let myScores = new Map<string, { score: number; comment: string | null }>();
@@ -105,7 +113,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
           <h1 style={{ marginBottom: '.25rem' }}>{idea.title}</h1>
           <p className="muted" style={{ margin: 0 }}>{idea.ref} · version {idea.version} · submitted {fmtDate(idea.submitted_at)}</p>
         </div>
-        <StageLabel stage={idea.stage} />
+        <div className="row" style={{ gap: '.5rem' }}><a className="btn ghost small" href={`/app/ideas/${id}/form`} download>Download as Word</a><StageLabel stage={idea.stage} /></div>
       </div>
       <StageTrack stage={idea.stage} reached={reached} />
 
@@ -183,6 +191,33 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
             </section>
           ) : null}
 
+          {inProjectStage && (milestones.length > 0 || inProj) && (
+            <section className="card project">
+              <h2>{idea.stage === 'awarded' ? 'Award progress' : 'Next steps'}</h2>
+              {milestones.length ? <Milestones ideaId={id} items={milestones} canTick={Boolean(inProj)} /> : <p className="muted">No next steps set yet.</p>}
+              {inProj && (
+                <>
+                  <h3>Project updates</h3>
+                  <p className="muted" style={{ marginTop: 0 }}>Shared between the innovator, their evaluators and the adjudicators.</p>
+                  {!updates.length && <p className="muted">No updates yet. Share progress, questions or dates here.</p>}
+                  <ol className="updates">
+                    {updates.map((u) => (
+                      <li key={u.id} className={u.author_id === me.id ? 'mine' : ''}>
+                        <strong>{u.author_id === me.id ? 'You' : u.author_id === idea.owner_id ? 'Innovator' : u.profiles?.role === 'evaluator' ? `${u.profiles.full_name ?? 'Evaluator'} (evaluator)` : `${u.profiles?.full_name ?? 'CEDA'} (adjudicator)`}</strong>
+                        <small>{fmtDate(u.created_at, true)}</small>
+                        <p>{u.body}</p>
+                      </li>
+                    ))}
+                  </ol>
+                  <ActionForm action={postProjectUpdate} submit="Share update" reset>
+                    <input type="hidden" name="idea_id" value={id} />
+                    <textarea name="body" required maxLength={2000} rows={2} placeholder="For example: Company registered with CIPA, first production run planned for March" aria-label="Project update" />
+                  </ActionForm>
+                </>
+              )}
+            </section>
+          )}
+
           <section className="card">
             <h2>Conversation</h2>
             {!feedback?.length && <p className="muted">No messages yet.</p>}
@@ -226,7 +261,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
                 <dl className="facts">
                   <dt>District</dt><dd>{facts.district}</dd>
                   <dt>Setting</dt><dd>{facts.urban ? 'Urban (town council area)' : 'Rural or village area'}</dd>
-                  <dt>Population</dt><dd>{facts.population.toLocaleString('en-GB')} (2011 census)</dd>
+                  <dt>Population</dt><dd>{facts.population.toLocaleString('en-GB')} (2022 census)</dd>
                   <dt>Nearest CEDA office</dt><dd>{facts.office}, about {facts.officeKm} km</dd>
                 </dl>
               ) : <p className="muted">Pinned outside the census districts.</p>}
@@ -307,21 +342,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
                 </table>
               </section>
 
-              {DECISIONS[idea.stage] && (
-                <section className="card">
-                  <h2>Decision</h2>
-                  <ActionForm action={moveIdea} submit="Confirm">
-                    <input type="hidden" name="idea_id" value={id} />
-                    {DECISIONS[idea.stage]!.map((d, i) => (
-                      <label key={d.to} className="row" style={{ fontWeight: 400, margin: 0 }}>
-                        <input type="radio" name="to" value={d.to} required defaultChecked={i === 0} /> {d.label}
-                      </label>
-                    ))}
-                    <label htmlFor="note" className="hint">Note to the submitter (required when returning or declining)</label>
-                    <textarea id="note" name="note" maxLength={2000} style={{ minHeight: 80 }} />
-                  </ActionForm>
-                </section>
-              )}
+              <DecisionPanel ideaId={id} stage={idea.stage} title={idea.title} ref_={idea.ref ?? ''} ownerEmail={panel?.owner?.email ?? null} ownerName={panel?.owner?.full_name ?? null} />
             </>
           )}
 
