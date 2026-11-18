@@ -98,37 +98,48 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   }
 
   if (me.role === 'evaluator') {
-    const { data } = await sb
-      .from('assignments')
-      .select('submitted_at, created_at, ideas!inner(id, ref, title, stage, district, version)')
-      .eq('evaluator_id', me.id)
-      .order('created_at', { ascending: false });
+    const [{ data }, { data: myScores }] = await Promise.all([
+      sb.from('assignments').select('submitted_at, created_at, ideas!inner(id, ref, title, stage, district, version, category_id)').eq('evaluator_id', me.id).order('created_at', { ascending: false }),
+      sb.from('scores').select('idea_id, score, criteria!inner(max_score, active)').eq('evaluator_id', me.id),
+    ]);
     const rows = (data ?? []) as unknown as { submitted_at: string | null; created_at: string; ideas: Pick<Idea, 'id' | 'ref' | 'title' | 'stage' | 'district' | 'version'> }[];
+    const scores = (myScores ?? []) as unknown as { idea_id: string; score: number; criteria: { max_score: number; active: boolean } }[];
+    const started = (id: string) => scores.filter((x) => x.idea_id === id && x.criteria.active).length;
+    const myPct = (id: string) => { const xs = scores.filter((x) => x.idea_id === id && x.criteria.active); return xs.length ? Math.round((100 * xs.reduce((a, x) => a + x.score / x.criteria.max_score, 0)) / xs.length) : null; };
     const todo = rows.filter((r) => !r.submitted_at && r.ideas.stage === 'in_review');
+    const done = rows.filter((r) => r.submitted_at);
+    const avg = done.length ? Math.round(done.reduce((a, r) => a + (myPct(r.ideas.id) ?? 0), 0) / done.length) : null;
+    const steps: Step[] = todo.slice(0, 4).map((r) => ({ href: `/app/ideas/${r.ideas.id}`, icon: started(r.ideas.id) ? 'review' : 'send', title: `${started(r.ideas.id) ? 'Finish scoring' : 'Score'}: ${r.ideas.title}`, sub: `${r.ideas.ref} · ${started(r.ideas.id)} of 6 categories scored`, t: started(r.ideas.id) ? 'orange' : 'maroon' }));
     return (
-      <div className="stack">
-        <h1>Ideas to evaluate</h1>
-        {sp.conflict && <p className="notice" role="status">Thank you. You have stepped out of that review, it has been passed to another reviewer, and your declaration is on record.</p>}
-        <p className="muted">{todo.length ? `${todo.length} waiting for your scores.` : 'You are all caught up.'}</p>
-        <div className="card table-scroll">
-          <table>
-            <thead><tr><th>Idea</th><th>District</th><th>Stage</th><th>Your scoring</th></tr></thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.ideas.id}>
-                  <td><Link href={`/app/ideas/${r.ideas.id}`}>{r.ideas.title}</Link><br /><small>{r.ideas.ref} · v{r.ideas.version}</small></td>
-                  <td>{r.ideas.district}</td>
-                  <td><StageLabel stage={r.ideas.stage} /></td>
-                  <td>{r.submitted_at ? `Done ${fmtDate(r.submitted_at)}` : r.ideas.stage === 'in_review' ? <strong>To do</strong> : 'Not open'}</td>
-                </tr>
-              ))}
-              {!rows.length && <tr><td colSpan={4} className="muted">Nothing assigned to you yet.</td></tr>}
-            </tbody>
-          </table>
+      <div className="dash">
+        <div className="dash-main">
+          <p className="dash-hello">{hello(me.full_name)}, welcome back</p>
+          {sp.conflict && <p className="notice" role="status">Thank you. You have stepped out of that review, it has been passed to another reviewer, and your declaration is on record.</p>}
+          <div className="row between"><h1>Ideas to evaluate</h1></div>
+          <div className="dtiles">
+            {todo.slice(0, 4).map((r, k) => <Tile key={r.ideas.id} href={`/app/ideas/${r.ideas.id}`} title={r.ideas.title} sub={`${r.ideas.ref} · ${r.ideas.district}`} pct={(started(r.ideas.id) / 6) * 100} icon="review" t={tone(k)} />)}
+            {!todo.length && <div className="dtile add"><Icon name="check" still /><strong>All caught up</strong><span>New ideas appear here when assigned</span></div>}
+          </div>
+          <h2>Next steps</h2>
+          <Steps items={steps} empty="Nothing waiting for your scores. Well done." />
+          <h2>Your scored ideas</h2>
+          <Queue rows={done.map((r) => ({ id: r.ideas.id, title: r.ideas.title, ref: r.ideas.ref, district: r.ideas.district, done: 6, total: 6, pct: myPct(r.ideas.id) }))} empty="You have not submitted any scores yet." action="View" />
         </div>
+        <aside className="dash-side">
+          <div className="bk-card glass"><BokamosoSeated size={130} say="Dumela!" /><p>I&apos;m Bokamoso. Score each category from 1 to 5 and add a comment.</p></div>
+          <h2>Statistics</h2>
+          <div className="dstats">
+            <Stat label="Waiting for your scores" value={todo.length} />
+            <Stat label="Scored and submitted" value={done.length} />
+            <Stat label="Assigned to you in total" value={rows.length} />
+            <Stat label="Your average score (%)" value={avg ?? '-'} />
+          </div>
+          <Activity title="Your scoring" dates={done.map((r) => r.submitted_at)} />
+        </aside>
       </div>
     );
   }
+
 
   // Adjudicators and admins
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
