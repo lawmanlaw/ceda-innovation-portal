@@ -216,10 +216,12 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
           {idea.lat != null && idea.lng != null && (isOwner || staff) && (
             <section className="card">
               <h2>Location</h2>
+              <details className="map-fold" open><summary className="btn ghost small">Map</summary>
               <svg viewBox={`-6 -6 ${MAP_W + 12} ${MAP_H + 12}`} className="mini-map" role="img" aria-label={`Pin in ${facts?.district ?? 'Botswana'}`}>
                 {REGIONS.map((r) => <path key={r.name} d={r.d} />)}
                 <circle cx={project(idea.lat, idea.lng).x} cy={project(idea.lat, idea.lng).y} r={16} />
               </svg>
+              </details>
               {facts ? (
                 <dl className="facts">
                   <dt>District</dt><dd>{facts.district}</dd>
