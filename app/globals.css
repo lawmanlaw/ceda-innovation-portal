@@ -855,3 +855,8 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 .queue-prog i { display: block; height: 6px; border-radius: 3px; background: var(--brand); margin-top: -10px; transition: width 600ms var(--ease-out); }
 .queue-score { font-size: 1.25rem; font-weight: 700; color: var(--brand); text-align: right; }
 @media (max-width: 640px) { .queue-row { grid-template-columns: minmax(0, 1fr) auto; } .queue-prog { grid-column: 1 / -1; order: 3; } }
+
+.map-fold > summary { list-style: none; margin-bottom: .5rem; }
+.map-fold > summary::-webkit-details-marker { display: none; }
+.map-fold[open] > summary::after { content: ' (hide)'; }
+.map-fold:not([open]) > summary::after { content: ' (show)'; }

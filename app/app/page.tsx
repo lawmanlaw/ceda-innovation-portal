@@ -16,14 +16,14 @@ const hello = (name: string | null | undefined) => {
 const STAGE_PCT: Record<string, number> = { submitted: 20, in_review: 45, feedback: 45, approved: 80, awarded: 100, rejected: 100, withdrawn: 100 };
 const STAGE_ICON: Record<string, IconName> = { submitted: 'send', in_review: 'review', feedback: 'chat', approved: 'check', awarded: 'award', rejected: 'list', withdrawn: 'list' };
 
-type QRow = { id: string; title: string; ref: string | null; district: string; done: number; total: number; pct: number | null };
+type QRow = { id: string; title: string; ref: string | null; district: string; done: number; total: number; pct: number | null; tag?: string };
 function Queue({ rows, empty, action }: { rows: QRow[]; empty: string; action: string }) {
   if (!rows.length) return <p className="muted">{empty}</p>;
   return (
     <div className="queue">
       {rows.map((r) => (
         <Link key={r.id} href={`/app/ideas/${r.id}`} className="queue-row">
-          <span className="queue-main"><strong>{r.title}</strong><small>{r.ref} · {r.district}</small></span>
+          <span className="queue-main"><strong>{r.title}</strong><small>{r.ref} · {r.district}{r.tag ? ` · ${r.tag}` : ''}</small></span>
           <span className="queue-prog" aria-label={`${r.done} of ${r.total} evaluators done`}><i style={{ width: `${r.total ? (r.done / r.total) * 100 : 0}%` }} /><small>{r.done} of {r.total} scored</small></span>
           <span className="queue-score">{r.pct != null ? `${Math.round(r.pct)}%` : '-'}</span>
           <span className="btn small">{action}</span>
@@ -186,6 +186,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <Queue rows={await Promise.all(ready.map(async (i) => ({ id: i.id, title: i.title, ref: i.ref, district: i.district, done: byIdea.get(i.id)?.done ?? 0, total: byIdea.get(i.id)?.total ?? 0, pct: ((await sb.rpc('idea_score_pct', { p_idea: i.id })).data as number | null) ?? null })))} empty="Nothing is waiting for your decision." action="Decide" />
         <h2>In review</h2>
         <Queue rows={await Promise.all(of('in_review').filter((i) => !ready.includes(i)).map(async (i) => ({ id: i.id, title: i.title, ref: i.ref, district: i.district, done: byIdea.get(i.id)?.done ?? 0, total: byIdea.get(i.id)?.total ?? 0, pct: byIdea.get(i.id)?.done ? (((await sb.rpc('idea_score_pct', { p_idea: i.id })).data as number | null) ?? null) : null })))} empty="No ideas are being scored right now." action="Open" />
+        <h2>Approved ideas</h2>
+        <Queue rows={await Promise.all([...of('approved'), ...of('awarded')].map(async (i) => ({ id: i.id, title: i.title, ref: i.ref, district: i.district, done: byIdea.get(i.id)?.done ?? 0, total: byIdea.get(i.id)?.total ?? 0, pct: ((await sb.rpc('idea_score_pct', { p_idea: i.id })).data as number | null) ?? null, tag: i.stage === 'awarded' ? 'Awarded' : 'Approved' })))} empty="No ideas approved yet." action="Open" />
         <h2>What needs attention</h2>
         <Steps items={steps} empty="Nothing is waiting on you. Well done." />
       </div>
