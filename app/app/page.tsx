@@ -35,7 +35,7 @@ function Queue({ rows, empty, action }: { rows: QRow[]; empty: string; action: s
 
 export const metadata = { title: 'Dashboard' };
 
-export default async function Dashboard({ searchParams }: { searchParams: Promise<{ conflict?: string }> }) {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ conflict?: string; deleted?: string }> }) {
   const sp = await searchParams;
   const me = await requireMe();
   if (me.role === 'agent') redirect('/app/agent');
@@ -64,6 +64,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     return (
       <div className="dash">
         <div className="dash-main">
+          {sp.deleted && <p className="notice" role="status">Your idea has been deleted.</p>}
           <p className="dash-hello">{hello(me.full_name)}, welcome back</p>
           <div className="row between"><h1>My ideas</h1><Link className="btn small" href="/app/ideas/new">Submit an idea</Link></div>
           {ideas.filter((i) => i.stage === 'awarded').slice(0, 1).map((i) => (

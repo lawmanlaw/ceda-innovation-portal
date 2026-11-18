@@ -15,7 +15,7 @@ create function extensions.digest(t text, a text) returns bytea language sql imm
 create function extensions.gen_random_bytes(n int) returns bytea language sql volatile as $$ select decode(substr(md5(random()::text)||md5(random()::text),1,n*2),'hex') $$;
 grant usage on schema public, auth, storage, extensions to anon, authenticated;
 `);
-for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql','0016_profile_photos.sql','0017_avatar_choice.sql','0018_security_cleanup.sql','0019_award_tracking.sql']) {
+for (const f of ['0001_init.sql','0002_storage.sql','0003_seed.sql','0004_hardening.sql','0005_lock_internal_functions.sql','0006_observer_role.sql','0007_observer_access.sql','0008_chat_widget.sql','0009_delete_account.sql','0010_draft_stage.sql','0011_drafts.sql','0012_rules_and_scoring.sql','0013_pins_conflicts.sql','0014_community_challenges.sql','0015_open_community.sql','0016_profile_photos.sql','0017_avatar_choice.sql','0018_security_cleanup.sql','0019_award_tracking.sql','0020_delete_idea.sql']) {
   try { await db.exec(fs.readFileSync(M+f,'utf8').replace('create extension if not exists pgcrypto;','').replace('create extension if not exists pgcrypto with schema extensions;','')); console.log('ok', f); }
   catch (e) { console.log('FAIL', f, e.message); process.exit(1); }
 }
@@ -163,6 +163,11 @@ check('outsider cannot tick a step', await as('sub2', `select public.toggle_mile
 check('innovator posts project update', await as('sub', `insert into public.project_updates (idea_id,author_id,body) values ($1,$2,'Company registered')`,[aw,U.sub]), r=>Array.isArray(r));
 check('adjudicator sees project update', await as('adj', `select body from public.project_updates where idea_id=$1`,[aw]), r=>Array.isArray(r) && r.length===1);
 check('other innovator cannot see project', await as('sub2', `select body from public.project_updates where idea_id=$1`,[aw]), r=>Array.isArray(r) && r.length===0);
+check('other innovator cannot delete idea', await as('sub2', `select public.delete_my_idea($1)`,[aw]), r=>typeof r==='string');
+check('anon cannot delete idea', await asAnon(`select public.delete_my_idea($1)`,[aw]), r=>typeof r==='string');
+check('innovator deletes own idea', await as('sub', `select public.delete_my_idea($1)`,[aw]), r=>Array.isArray(r));
+check('idea and steps gone', (await db.query(`select (select count(*) from public.ideas where id=$1)+(select count(*) from public.milestones where idea_id=$1) n`,[aw])).rows[0].n, n=>Number(n)===0);
+check('idea deletion audited', (await db.query(`select count(*) n from public.audit_log where action like 'idea_deleted%'`)).rows[0].n, n=>Number(n)>=1);
 check('staff cannot self-delete', await as('ev', `select public.delete_my_account()`), r=>typeof r==='string' && r.includes('administrator'));
 check('innovator deletes account', await as('sub', `select public.delete_my_account()`), r=>Array.isArray(r));
 check('account and ideas gone', (await db.query(`select (select count(*) from auth.users where id=$1)::int u, (select count(*) from public.ideas where owner_id=$1)::int i`,[U.sub])).rows[0], r=>r.u===0 && r.i===0);
