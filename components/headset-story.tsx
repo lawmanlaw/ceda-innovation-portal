@@ -16,9 +16,9 @@ const BEATS = [
 const N = BEATS.length;
 
 // camera distance and sideways shift at each beat; the turn happens across beats 2 to 5
-const Z = [8.5, 4.4, 7, 7, 7, 6];
+const Z = [8.5, 5.4, 7.2, 7.2, 7.2, 6.4];
 const X = [0, 0, 1.15, -1.15, 1.15, 0];
-const Y = [0, -0.38, 0, 0, 0, 0.42];
+const Y = [0, -0.3, 0, 0, 0, 0.42];
 const ease = (t: number) => t * t * (3 - 2 * t);
 const at = (arr: readonly number[], p: number) => {
   const f = Math.min(N - 1, Math.max(0, p * (N - 1)));
@@ -32,23 +32,22 @@ export default function HeadsetStory({ start }: { start: string }) {
   const [beat, setBeat] = useState(0);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [vivid, setVivid] = useState(false);
   const pin = useRef<HTMLDivElement>(null);
-  const lastY = useRef(0);
 
   useEffect(() => {
     let stop = false, raf = 0, visible = true;
     let cleanup = () => {};
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const el = section.current!, cv = canvas.current!;
-    const progress = () => { const r = el.getBoundingClientRect(); return Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight))); };
+    // the pinned stage sits just under the sticky top bar, so measure from there
+    const progress = () => { const r = el.getBoundingClientRect(), pn = pin.current!; const top = parseFloat(getComputedStyle(pn).top) || 0; return Math.min(1, Math.max(0, (top - r.top) / Math.max(1, r.height - pn.offsetHeight))); };
     const onScroll = () => {
       setBeat(Math.min(N - 1, Math.round(progress() * (N - 1))));
-      if (Math.abs(scrollY - lastY.current) > 40) { setVivid(false); lastY.current = scrollY; } // scrolling brings the wash back
     };
-    // the photo shows in full colour wherever the mouse is
-    const spot = (e: PointerEvent) => { const r = pin.current?.getBoundingClientRect(); if (!r) return; pin.current!.style.setProperty('--mx', `${e.clientX - r.left}px`); pin.current!.style.setProperty('--my', `${e.clientY - r.top}px`); };
-    el.addEventListener('pointermove', spot);
+
+    const bar = document.querySelector<HTMLElement>('.topbar');
+    const setBar = () => document.documentElement.style.setProperty('--topbar-h', `${bar?.offsetHeight ?? 60}px`);
+    setBar(); addEventListener('resize', setBar);
     addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
     (async () => {
@@ -81,10 +80,9 @@ export default function HeadsetStory({ start }: { start: string }) {
         const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) loop(); }); io.observe(el);
 
         let cur = 0, last = performance.now(), born = performance.now(), drag = 0, dragV = 0, px: number | null = null;
-        let downX = 0;
-        const down = (e: PointerEvent) => { px = e.clientX; downX = e.clientX; };
+        const down = (e: PointerEvent) => { px = e.clientX; };
         const move = (e: PointerEvent) => { if (px === null) return; dragV = (e.clientX - px) * 0.01; drag += dragV; px = e.clientX; };
-        const up = (e: PointerEvent) => { if (px !== null && Math.abs(e.clientX - downX) < 6) { lastY.current = scrollY; setVivid((v) => !v); } px = null; };
+        const up = () => { px = null; };
         cv.addEventListener('pointerdown', down); addEventListener('pointermove', move); addEventListener('pointerup', up);
 
         function loop() {
@@ -111,12 +109,12 @@ export default function HeadsetStory({ start }: { start: string }) {
         cleanup = () => { ro.disconnect(); io.disconnect(); removeEventListener('pointermove', move); removeEventListener('pointerup', up); cv.removeEventListener('pointerdown', down); renderer.dispose(); pmrem.dispose(); };
       } catch { if (!stop) setFailed(true); }
     })();
-    return () => { stop = true; cancelAnimationFrame(raf); removeEventListener('scroll', onScroll); el.removeEventListener('pointermove', spot); cleanup(); };
+    return () => { stop = true; cancelAnimationFrame(raf); removeEventListener('scroll', onScroll); removeEventListener('resize', setBar); cleanup(); };
   }, []);
 
   return (
     <section ref={section} className="hs" aria-label="Innovate with CEDA">
-      <div ref={pin} className={`hs-pin${vivid ? ' vivid' : ''}`}>
+      <div ref={pin} className="hs-pin">
         {BEATS.map((b, i) => (i > 0 && BEATS[i - 1].bg === b.bg ? null : (
           <img key={b.bg} className={`hs-bg${BEATS[beat].bg === b.bg ? ' on' : ''}`} src={`/img/${b.bg}.webp`} alt="" aria-hidden="true" decoding="async" loading={i === 0 ? 'eager' : 'lazy'} />
         )))}
@@ -124,7 +122,7 @@ export default function HeadsetStory({ start }: { start: string }) {
         {(!ready || failed) && <img className={`hs-poster${failed ? ' still' : ''}`} src="/models/headset.webp" alt="" aria-hidden="true" />}
         {BEATS.map((b, i) => (
           <div key={i} className={`hs-beat ${b.side}${beat === i ? ' on' : ''}${i === 1 ? ' big' : ''}`} aria-hidden={beat !== i}>
-            {i === 0 && <p className="hs-cue">Tap the headset for colour, scroll to explore</p>}
+            {i === 0 && <p className="hs-cue">Scroll to explore</p>}
             {b.title && (i === 1 ? <h1>{b.title}</h1> : <h2>{b.title}</h2>)}
             {b.body && <p>{b.body}</p>}
             {i === 4 && <Link className="btn secondary hs-cta-one" href="/challenges" tabIndex={beat === i ? 0 : -1}>Browse challenges</Link>}
