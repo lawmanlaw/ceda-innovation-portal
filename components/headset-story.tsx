@@ -6,20 +6,19 @@ import { useEffect, useRef, useState } from 'react';
 // portal does, and comes back to the logo for the call to action. three.js loads only on this page,
 // after first paint, and stops drawing whenever the section is off screen.
 const BEATS = [
-  { side: 'center', title: '', body: '' },
-  { side: 'center', title: 'Innovate with CEDA', body: 'One home for the ideas that will grow Botswana’s next businesses.' },
-  { side: 'left', title: 'Ideas from every district', body: 'Submit from Maun to Tsabong, on your phone, in minutes. Save drafts and come back any time.' },
-  { side: 'right', title: 'Reviewed fairly, by experts', body: 'Evaluators score every idea on six published criteria, and conflicts of interest are declared on record.' },
-  { side: 'left', title: 'Follow every step', body: 'Watch your idea move from submitted to review to award, and talk to the panel along the way.' },
-  { side: 'right', title: 'From idea to business', body: 'Awarded ideas get next steps, deadlines and a shared project space with CEDA’s panel.' },
-  { side: 'center', title: 'Convinced? Ready to innovate with CEDA', body: '' },
+  { side: 'center', title: '', body: '', bg: 'gaborone' },
+  { side: 'center', title: 'Innovate with CEDA', body: 'One home for the ideas that will grow Botswana\u2019s next businesses.', bg: 'gaborone' },
+  { side: 'left', title: 'Ideas from every district', body: 'Farming, factories, services or a better way for CEDA to work. Submit from anywhere in minutes and save drafts as you go.', bg: 'cabbages' },
+  { side: 'right', title: 'Reviewed fairly, tracked all the way', body: 'Experts score every idea on six published criteria. You see each step, talk to the panel, and awarded ideas get next steps and a project space.', bg: 'whiteboard' },
+  { side: 'left', title: 'No idea yet? Start with a challenge', body: 'Browse real problems reported by communities across Botswana. One of them could spark your next venture.', bg: 'poultry' },
+  { side: 'center', title: 'Convinced? Ready to innovate with CEDA', body: '', bg: 'bulbs' },
 ] as const;
 const N = BEATS.length;
 
 // camera distance and sideways shift at each beat; the turn happens across beats 2 to 5
-const Z = [8.5, 3.6, 7, 7, 7, 7, 6];
-const X = [0, 0, 1.15, -1.15, 1.15, -1.15, 0];
-const Y = [0, -0.3, 0, 0, 0, 0, 0.42];
+const Z = [8.5, 3.6, 7, 7, 7, 6];
+const X = [0, 0, 1.15, -1.15, 1.15, 0];
+const Y = [0, -0.3, 0, 0, 0, 0.42];
 const ease = (t: number) => t * t * (3 - 2 * t);
 const at = (arr: readonly number[], p: number) => {
   const f = Math.min(N - 1, Math.max(0, p * (N - 1)));
@@ -86,7 +85,7 @@ export default function HeadsetStory({ start }: { start: string }) {
           cur += (p - cur) * (reduce ? 1 : 1 - Math.exp(-dt * 5)); // same feel at any frame rate
           if (px === null) { dragV *= 0.92; drag += dragV; drag *= 0.97; }
           const intro = reduce ? 1 : ease(Math.min(1, (performance.now() - born) / 1100)); // arrival on load
-          const turn = Math.min(1, Math.max(0, (cur * (N - 1) - 1.5) / 4)); // beats 1.5 to 5.5
+          const turn = Math.min(1, Math.max(0, (cur * (N - 1) - 1.5) / 3)); // beats 1.5 to 4.5
           const mid = Math.sin(turn * Math.PI);
           pivot.rotation.y = ease(turn) * Math.PI * 2 + drag + (1 - intro) * -0.6;
           pivot.rotation.x = 0.06 - mid * 0.22;
@@ -108,6 +107,9 @@ export default function HeadsetStory({ start }: { start: string }) {
   return (
     <section ref={section} className="hs" aria-label="Innovate with CEDA">
       <div className="hs-pin">
+        {BEATS.map((b, i) => (i > 0 && BEATS[i - 1].bg === b.bg ? null : (
+          <img key={b.bg} className={`hs-bg${BEATS[beat].bg === b.bg ? ' on' : ''}`} src={`/img/${b.bg}.webp`} alt="" aria-hidden="true" decoding="async" loading={i === 0 ? 'eager' : 'lazy'} />
+        )))}
         <canvas ref={canvas} className={`hs-canvas${ready ? ' on' : ''}`} aria-hidden="true" />
         {(!ready || failed) && <img className={`hs-poster${failed ? ' still' : ''}`} src="/models/headset.webp" alt="" aria-hidden="true" />}
         {BEATS.map((b, i) => (
@@ -115,6 +117,7 @@ export default function HeadsetStory({ start }: { start: string }) {
             {i === 0 && <p className="hs-cue">Scroll to explore</p>}
             {b.title && (i === 1 ? <h1>{b.title}</h1> : <h2>{b.title}</h2>)}
             {b.body && <p>{b.body}</p>}
+            {i === 4 && <Link className="btn secondary hs-cta-one" href="/challenges" tabIndex={beat === i ? 0 : -1}>Browse challenges</Link>}
             {i === N - 1 && (
               <div className="row hs-cta">
                 <Link className="btn" href={start} tabIndex={beat === i ? 0 : -1}>Submit an idea</Link>

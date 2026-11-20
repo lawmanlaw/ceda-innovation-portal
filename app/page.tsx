@@ -42,20 +42,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
         <HeadsetStory start={start} />
         <div className="wrap stack">
           {deleted && <p className="notice" role="status">Your account and all your submissions have been deleted.</p>}
-          <section className="hero">
-            <div>
-              <h1>Bring your idea to CEDA</h1>
-              <p>
-                Submit an idea that could grow a business, create jobs or improve how CEDA works. Follow every step of its
-                review, talk to the panel, and get recognised when it is taken forward.
-              </p>
-              <div className="row">
-                <Link className="btn" href={start}>Submit an idea</Link>
-                <Link className="btn secondary" href="/report">Report a problem</Link>
-              </div>
-            </div>
-            <img className="photo hero-photo" src="/img/gaborone.webp" alt="Gaborone seen from the air at sunrise" fetchPriority="high" />
-          </section>
 
           <section className="community-band">
             <BokamosoSeated size={170} say="Dumela!" />
@@ -111,15 +97,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
             </div>
           </section>
 
-          <section className="band">
-            <img src="/img/bulbs.webp" alt="" loading="lazy" decoding="async" />
-            <div>
-              <Icon name="bulb" className="big" />
-              <h2>Have an idea worth backing?</h2>
-              <p>It takes about 10 minutes to submit, and you can follow it all the way to a decision.</p>
-              <Link className="btn" href={start}>Submit an idea</Link>
-            </div>
-          </section>
         </div>
       </main>
     </>
