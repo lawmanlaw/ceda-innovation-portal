@@ -3,6 +3,7 @@ import BokamosoSeated from '@/components/bokamoso-seated';
 import { getMe } from '@/lib/supabase/server';
 import { STAGES } from '@/lib/types';
 import Icon from '@/components/icon';
+import HeadsetStory from '@/components/headset-story';
 
 const STEP = {
   submitted: ['send', 'We confirm receipt and check it is complete.'],
@@ -33,10 +34,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
             <Link href="/report">Report a problem</Link>
             <Link href="/help">Help</Link>
             {me ? <Link href="/app">My dashboard</Link> : <Link href="/login">Sign in</Link>}
+            <Link className="btn small" href={start}>Submit an idea</Link>
           </nav>
         </div>
       </header>
       <main id="main">
+        <HeadsetStory start={start} />
         <div className="wrap stack">
           {deleted && <p className="notice" role="status">Your account and all your submissions have been deleted.</p>}
           <section className="hero">

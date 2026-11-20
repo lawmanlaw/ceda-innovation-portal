@@ -5,12 +5,12 @@ const supabaseWs = supabase.replace(/^https/, 'wss');
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com", // wasm only: the 3D model decoder
   "frame-src https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${supabase} https://tile.openstreetmap.org`,
   "font-src 'self'",
-  `connect-src 'self' ${supabase} ${supabaseWs} https://challenges.cloudflare.com`,
+  `connect-src 'self' blob: ${supabase} ${supabaseWs} https://challenges.cloudflare.com`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
