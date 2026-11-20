@@ -894,7 +894,7 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 
 /* Headset scroll story */
 .hs { height: 480vh; position: relative; background: radial-gradient(ellipse at 50% 55%, #fff 0%, var(--bg) 60%); }
-.hs-pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+.hs-pin { position: sticky; top: var(--topbar-h, 60px); height: calc(100vh - var(--topbar-h, 60px)); height: calc(100svh - var(--topbar-h, 60px)); overflow: hidden; }
 .hs-canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 300ms var(--ease-out); touch-action: pan-y; cursor: grab; }
 .hs-canvas.on { opacity: 1; }
 .hs-poster { position: absolute; left: 50%; top: 50%; width: min(34vw, 300px); transform: translate(-50%, -50%); animation: hs-pulse 1.4s ease-in-out infinite alternate; }
@@ -927,11 +927,11 @@ a.card:hover, .dstat:hover, .ch-card:hover { transform: translateY(-3px); box-sh
 
 .hs-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.06); transition: opacity 600ms var(--ease-out), transform 1200ms var(--ease-out); }
 .hs-bg.on { opacity: 1; transform: none; }
-.hs-pin { --mx: -999px; --my: -999px; }
-.hs-pin::before { content: ''; position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(250,247,245,.55), rgba(250,247,245,.88) 70%); pointer-events: none;
-  -webkit-mask: radial-gradient(circle 170px at var(--mx) var(--my), transparent 0, transparent 40%, #000 100%); mask: radial-gradient(circle 170px at var(--mx) var(--my), transparent 0, transparent 40%, #000 100%); transition: opacity 600ms var(--ease-out); }
-.hs-pin.vivid::before { opacity: .22; }
+.hs-pin::before { content: ''; position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(250,247,245,.3), rgba(250,247,245,.62) 75%); pointer-events: none; }
 .hs-canvas, .hs-poster, .hs-beat, .hs-dots { z-index: 2; }
 .hs-cta-one { margin-top: 1rem; }
 @media (prefers-reduced-motion: reduce) { .hs-bg { transition: none; transform: none; } }
-.hs-pin.vivid .hs-beat h1, .hs-pin.vivid .hs-beat h2, .hs-pin.vivid .hs-beat p { text-shadow: 0 0 14px #fff, 0 0 28px #fff, 0 0 2px #fff; }
+@media (max-width: 760px) { .hs-pin { top: var(--topbar-h, 68px); height: calc(100svh - var(--topbar-h, 68px)); } .hs .hs-beat.big { top: 40px; } }
+.hs-beat.big { top: 5vh; }
+main:has(> .hs) { padding-top: 0; margin-top: 0; } .hs { margin-top: 0; }
+.hs + .wrap { padding-top: 2.5rem; }
