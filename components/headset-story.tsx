@@ -6,12 +6,12 @@ import { useEffect, useRef, useState } from 'react';
 // portal does, and comes back to the logo for the call to action. three.js loads only on this page,
 // after first paint, and stops drawing whenever the section is off screen.
 const BEATS = [
-  { side: 'center', title: '', body: '', bg: 'gaborone' },
-  { side: 'center', title: 'Innovate with CEDA', body: 'One home for the ideas that will grow Botswana\u2019s next businesses.', bg: 'gaborone' },
-  { side: 'left', title: 'Ideas from every district', body: 'Farming, factories, services or a better way for CEDA to work. Submit from anywhere in minutes and save drafts as you go.', bg: 'cabbages' },
-  { side: 'right', title: 'Reviewed fairly, tracked all the way', body: 'Experts score every idea on six published criteria. You see each step, talk to the panel, and awarded ideas get next steps and a project space.', bg: 'whiteboard' },
-  { side: 'left', title: 'No idea yet? Start with a challenge', body: 'Browse real problems reported by communities across Botswana. One of them could spark your next venture.', bg: 'poultry' },
-  { side: 'center', title: 'Convinced? Ready to innovate with CEDA', body: '', bg: 'bulbs' },
+  { side: 'center', title: '', body: '' },
+  { side: 'center', title: 'Innovate with CEDA', body: 'One home for the ideas that will grow Botswana\u2019s next businesses.' },
+  { side: 'left', title: 'Ideas from every district', body: 'Farming, factories, services or a better way for CEDA to work. Submit from anywhere in minutes and save drafts as you go.' },
+  { side: 'right', title: 'Reviewed fairly, tracked all the way', body: 'Experts score every idea on six published criteria. You see each step, talk to the panel, and awarded ideas get next steps and a project space.' },
+  { side: 'left', title: 'No idea yet? Start with a challenge', body: 'Browse real problems reported by communities across Botswana. One of them could spark your next venture.' },
+  { side: 'center', title: 'Convinced? Ready to innovate with CEDA', body: '' },
 ] as const;
 const N = BEATS.length;
 
@@ -34,12 +34,13 @@ export default function HeadsetStory({ start }: { start: string }) {
   const [failed, setFailed] = useState(false);
   const pin = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
-  // the Gaborone clip plays only while it is on screen, and never for people who prefer less motion
+  // the Gaborone clip plays while the story is on screen, and never for people who prefer less motion
   useEffect(() => {
-    const v = video.current; if (!v) return;
-    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!still && BEATS[beat].bg === 'gaborone') v.play().catch(() => {}); else v.pause();
-  }, [beat]);
+    const v = video.current, el = section.current; if (!v || !el) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const vo = new IntersectionObserver(([e]) => { if (e.isIntersecting) v.play().catch(() => {}); else v.pause(); });
+    vo.observe(el); return () => vo.disconnect();
+  }, []);
 
   useEffect(() => {
     let stop = false, raf = 0, visible = true;
@@ -122,11 +123,7 @@ export default function HeadsetStory({ start }: { start: string }) {
   return (
     <section ref={section} className="hs" aria-label="Innovate with CEDA">
       <div ref={pin} className="hs-pin">
-        {BEATS.map((b, i) => (i > 0 && BEATS[i - 1].bg === b.bg ? null : b.bg === 'gaborone' ? (
-          <video key="hero" ref={video} className={`hs-bg${BEATS[beat].bg === b.bg ? ' on' : ''}`} src="/img/hero.mp4" poster="/img/hero.jpg" muted loop playsInline preload="auto" aria-hidden="true" />
-        ) : (
-          <img key={b.bg} className={`hs-bg${BEATS[beat].bg === b.bg ? ' on' : ''}`} src={`/img/${b.bg}.webp`} alt="" aria-hidden="true" decoding="async" loading="lazy" />
-        )))}
+        <video ref={video} className="hs-bg on" src="/img/hero.mp4" poster="/img/hero.jpg" muted loop playsInline preload="auto" aria-hidden="true" />
         <canvas ref={canvas} className={`hs-canvas${ready ? ' on' : ''}`} aria-hidden="true" />
         {(!ready || failed) && <img className={`hs-poster${failed ? ' still' : ''}`} src="/models/headset.webp" alt="" aria-hidden="true" />}
         {BEATS.map((b, i) => (
