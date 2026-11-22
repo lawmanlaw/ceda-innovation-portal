@@ -33,6 +33,13 @@ export default function HeadsetStory({ start }: { start: string }) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const pin = useRef<HTMLDivElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  // the Gaborone clip plays only while it is on screen, and never for people who prefer less motion
+  useEffect(() => {
+    const v = video.current; if (!v) return;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!still && BEATS[beat].bg === 'gaborone') v.play().catch(() => {}); else v.pause();
+  }, [beat]);
 
   useEffect(() => {
     let stop = false, raf = 0, visible = true;
@@ -115,8 +122,10 @@ export default function HeadsetStory({ start }: { start: string }) {
   return (
     <section ref={section} className="hs" aria-label="Innovate with CEDA">
       <div ref={pin} className="hs-pin">
-        {BEATS.map((b, i) => (i > 0 && BEATS[i - 1].bg === b.bg ? null : (
-          <img key={b.bg} className={`hs-bg${BEATS[beat].bg === b.bg ? ' on' : ''}`} src={`/img/${b.bg}.webp`} alt="" aria-hidden="true" decoding="async" loading={i === 0 ? 'eager' : 'lazy'} />
+        {BEATS.map((b, i) => (i > 0 && BEATS[i - 1].bg === b.bg ? null : b.bg === 'gaborone' ? (
+          <video key="hero" ref={video} className={`hs-bg${BEATS[beat].bg === b.bg ? ' on' : ''}`} src="/img/hero.mp4" poster="/img/hero.jpg" muted loop playsInline preload="auto" aria-hidden="true" />
+        ) : (
+          <img key={b.bg} className={`hs-bg${BEATS[beat].bg === b.bg ? ' on' : ''}`} src={`/img/${b.bg}.webp`} alt="" aria-hidden="true" decoding="async" loading="lazy" />
         )))}
         <canvas ref={canvas} className={`hs-canvas${ready ? ' on' : ''}`} aria-hidden="true" />
         {(!ready || failed) && <img className={`hs-poster${failed ? ' still' : ''}`} src="/models/headset.webp" alt="" aria-hidden="true" />}
