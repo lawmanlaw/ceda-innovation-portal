@@ -938,3 +938,30 @@ main:has(> .hs) { padding-top: 0; margin-top: 0; } .hs { margin-top: 0; }
 .hs-beat h1 { text-shadow: 0 2px 4px rgba(0,0,0,.5), 0 4px 28px rgba(0,0,0,.45); }
 .hs-dots i { background: rgba(255,255,255,.6); }
 .hs-beat p { font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.8), 0 0 10px rgba(0,0,0,.6), 0 2px 24px rgba(0,0,0,.55); }
+
+/* Phone menu */
+.mmenu { display: none; }
+@media (max-width: 760px) {
+  .topbar .nav { display: none; }
+  .mmenu { display: block; }
+  .mmenu summary { list-style: none; width: 44px; height: 44px; display: grid; place-content: center; gap: 5px; cursor: pointer; border-radius: 10px; }
+  .mmenu summary::-webkit-details-marker { display: none; }
+  .mmenu summary span { display: block; width: 22px; height: 2px; border-radius: 1px; background: var(--ink); transition: transform var(--motion-200) var(--ease-out), opacity var(--motion-150) var(--ease-out); }
+  .mmenu[open] summary span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .mmenu[open] summary span:nth-child(2) { opacity: 0; }
+  .mmenu[open] summary span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .mmenu-sheet { position: absolute; left: 0; right: 0; top: 100%; background: var(--surface); box-shadow: 0 12px 24px rgb(63 44 36 / .12); padding: .5rem 1rem 1.25rem; display: grid; animation: enter-up var(--motion-200) var(--ease-out); }
+  .mmenu-sheet a:not(.btn) { padding: .85rem .25rem; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 1.05rem; box-shadow: 0 1px 0 var(--line); }
+  .mmenu-sheet .btn { margin-top: 1rem; text-align: center; }
+  .topbar .wrap { min-height: 56px; }
+  .brand img { height: 34px; }
+  .brand { gap: .55rem; font-size: .95rem; }
+
+  /* Calmer phone layout everywhere */
+  main { padding: 1rem 0 5rem; }
+  .card { padding: 1rem; }
+  h1 { font-size: 1.6rem; line-height: 1.15; }
+  h2 { font-size: 1.25rem; }
+  .chat-fab { width: 52px; height: 52px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .chat-fab .icon.still { width: 22px; height: 22px; }
+}

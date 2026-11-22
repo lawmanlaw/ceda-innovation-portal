@@ -4,6 +4,7 @@ import { getMe } from '@/lib/supabase/server';
 import { STAGES } from '@/lib/types';
 import Icon from '@/components/icon';
 import HeadsetStory from '@/components/headset-story';
+import MobileMenu from '@/components/mobile-menu';
 
 const STEP = {
   submitted: ['send', 'We confirm receipt and check it is complete.'],
@@ -36,6 +37,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
             {me ? <Link href="/app">My dashboard</Link> : <Link href="/login">Sign in</Link>}
             <Link className="btn small" href={start}>Submit an idea</Link>
           </nav>
+          <MobileMenu signedIn={Boolean(me)} start={start} />
         </div>
       </header>
       <main id="main">

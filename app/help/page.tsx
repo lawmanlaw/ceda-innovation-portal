@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import MobileMenu from '@/components/mobile-menu';
 import { supabaseServer } from '@/lib/supabase/server';
 import FaqSearch from './faq-search';
 import { initials, logoFor } from './authority-logo';
@@ -23,6 +24,7 @@ export default async function Help() {
         <div className="wrap">
           <Link href="/" className="brand"><span className="brand-mark"><img src="/ceda-logo.png" alt="CEDA" width={67} height={40} /></span><i className="brand-rule" aria-hidden="true" /><span className="brand-name"><span>Innovation Portal</span></span></Link>
           <nav className="nav"><Link href="/app">My dashboard</Link></nav>
+          <MobileMenu signedIn={false} start="/app/ideas/new" />
         </div>
       </header>
       <main id="main">
