@@ -9,7 +9,7 @@ The home page opens with a 3D CEDA headset that turns as you scroll through what
 ## How it works
 
 **Innovators**
-1. Sign up with email or Google. Bokamoso, the portal guide, gives a short tour.
+1. Sign up with your email. Bokamoso, the portal guide, gives a short tour.
 2. Start an idea. It saves as a draft while you type. Drop a pin for where it will happen and attach files (each one is checked for viruses and hidden code).
 3. Go through the checklist and submit. Once submitted, the idea is final unless the panel asks for changes.
 4. Follow the idea through each stage: Submitted, In review, Needs changes, Approved, Awarded. Alerts arrive at every step.
